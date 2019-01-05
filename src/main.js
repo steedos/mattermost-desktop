@@ -75,31 +75,12 @@ if (argv['data-dir']) {
 
 global.isDev = isDev && !argv.disableDevMode;
 
-let config = {};
-try {
-  const configFile = app.getPath('userData') + '/config.json';
-  config = settings.readFileSync(configFile);
-  if (config.version !== settings.version) {
-    config = settings.upgrade(config);
-    settings.writeFileSync(configFile, config);
-  }
-} catch (e) {
-  config = settings.loadDefault();
-  console.log('Failed to read or upgrade config.json', e);
-  if (!config.teams.length && config.defaultTeam) {
-    config.teams.push(config.defaultTeam);
-
-    const configFile = app.getPath('userData') + '/config.json';
-    settings.writeFileSync(configFile, config);
-  }
-}
-if (config.enableHardwareAcceleration === false) {
-  app.disableHardwareAcceleration();
-}
+let config = settings.init(app, ipcMain, buildConfig);
 
 ipcMain.on('update-config', () => {
-  const configFile = app.getPath('userData') + '/config.json';
-  config = settings.readFileSync(configFile);
+  config = settings.read();
+  console.log("DEBUG wget: is anagement enabled? : " + buildConfig.enableServerManagement);
+
   if (process.platform === 'win32' || process.platform === 'linux') {
     const appLauncher = new AutoLauncher();
     const autoStartTask = config.autostart ? appLauncher.enable() : appLauncher.disable();
@@ -420,8 +401,7 @@ app.on('ready', () => {
 
   if (!config.spellCheckerLocale) {
     config.spellCheckerLocale = SpellChecker.getSpellCheckerLocale(app.getLocale());
-    const configFile = app.getPath('userData') + '/config.json';
-    settings.writeFileSync(configFile, config);
+    settings.save(config);
   }
 
   const appStateJson = path.join(app.getPath('userData'), 'app-state.json');
@@ -443,12 +423,9 @@ app.on('ready', () => {
 
   // Protocol handler for win32
   if (process.platform === 'win32') {
-    // Keep only command line / deep linked argument. Make sure it's not squirrel command
+    // Keep only command line / deep linked argument.
     const tmpArgs = process.argv.slice(1);
-    if (
-      Array.isArray(tmpArgs) && tmpArgs.length > 0 &&
-      tmpArgs[0].match(/^--squirrel-/) === null
-    ) {
+    if (Array.isArray(tmpArgs) && tmpArgs.length > 0) {
       setDeeplinkingUrl(tmpArgs[0]);
     }
   }
