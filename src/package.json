@@ -1,11 +1,11 @@
 {
-  "name": "mattermost-desktop",
-  "productName": "Mattermost",
-  "desktopName": "Mattermost.desktop",
+  "name": "steedos-messenger-desktop",
+  "productName": "华信",
+  "desktopName": "SteedosMessenger.desktop",
   "version": "4.3.0-develop",
-  "description": "Mattermost",
+  "description": "华信",
   "main": "main_bundle.js",
-  "author": "Mattermost, Inc. <feedback@mattermost.com>",
+  "author": "Steedos, Inc. <support@steedos.com>",
   "homepage": "https://about.mattermost.com",
   "license": "Apache-2.0",
   "dependencies": {

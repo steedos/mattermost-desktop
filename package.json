@@ -1,17 +1,17 @@
 {
-  "name": "mattermost-desktop",
-  "productName": "Mattermost",
+  "name": "messenger-desktop",
+  "productName": "华信",
   "version": "4.3.0-develop",
-  "description": "Mattermost",
+  "description": "华信",
   "main": "main.js",
-  "author": "Mattermost, Inc. <feedback@mattermost.com>",
+  "author": "Steedos, Inc. <support@steedos.com>",
   "license": "Apache-2.0",
   "engines": {
     "node": ">=4.2.0"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/mattermost/desktop.git"
+    "url": "git://github.com/steedos/mattermost-desktop.git"
   },
   "scripts": {
     "postinstall": "electron-builder install-app-deps && npm run extract-dict",
