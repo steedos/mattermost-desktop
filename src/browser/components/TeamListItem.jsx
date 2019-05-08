@@ -33,12 +33,12 @@ export default class TeamListItem extends React.Component {
           <a
             href='#'
             onClick={this.handleTeamEditing}
-          >{'Edit'}</a>
+          >{'编辑'}</a>
           {' - '}
           <a
             href='#'
             onClick={this.handleTeamRemove}
-          >{'Remove'}</a>
+          >{'移除'}</a>
         </div>
       </div>
     );

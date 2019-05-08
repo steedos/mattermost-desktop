@@ -16,15 +16,15 @@
  *                                          when "enableServerManagement is set to false
  */
 const buildConfig = {
-  defaultTeams: [/*
-    {
-      name: 'example',
-      url: 'https://example.com'
-    }*/
+  defaultTeams: [
+    // {
+    //   name: '华信',
+    //   url: 'https://messenger.steedos.cn'
+    // }
   ],
-  helpLink: 'https://about.mattermost.com/default-desktop-app-documentation/',
+  helpLink: 'https://www.steedos.com/cn/messenger/',
   enableServerManagement: true,
-  enableAutoUpdater: true,
+  enableAutoUpdater: false,
 };
 
 export default buildConfig;

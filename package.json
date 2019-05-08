@@ -1,7 +1,7 @@
 {
   "name": "messenger-desktop",
   "productName": "华信",
-  "version": "4.3.0-develop",
+  "version": "4.2.1",
   "description": "华信",
   "main": "main.js",
   "author": "Steedos, Inc. <support@steedos.com>",

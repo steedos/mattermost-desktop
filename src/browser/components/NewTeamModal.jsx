@@ -102,16 +102,16 @@ export default class NewTeamModal extends React.Component {
 
   getSaveButtonLabel() {
     if (this.props.editMode) {
-      return 'Save';
+      return '编辑';
     }
-    return 'Add';
+    return '新增';
   }
 
   getModalTitle() {
     if (this.props.editMode) {
-      return 'Edit Server';
+      return '编辑服务器';
     }
-    return 'Add Server';
+    return '新增服务器';
   }
 
   render() {
@@ -151,25 +151,25 @@ export default class NewTeamModal extends React.Component {
             <FormGroup
               validationState={this.getTeamNameValidationState()}
             >
-              <ControlLabel>{'Server Display Name'}</ControlLabel>
+              <ControlLabel>{'服务器显示名'}</ControlLabel>
               <FormControl
                 id='teamNameInput'
                 type='text'
                 value={this.state.teamName}
-                placeholder='Server Name'
+                placeholder='服务器显示名'
                 onChange={this.handleTeamNameChange.bind(this)}
                 onClick={(e) => {
                   e.stopPropagation();
                 }}
               />
               <FormControl.Feedback/>
-              <HelpBlock>{'The name of the server displayed on your desktop app tab bar.'}</HelpBlock>
+              <HelpBlock>{'桌面客户端选项卡栏上显示的服务器名称。'}</HelpBlock>
             </FormGroup>
             <FormGroup
               className='NewTeamModal-noBottomSpace'
               validationState={this.getTeamUrlValidationState()}
             >
-              <ControlLabel>{'Server URL'}</ControlLabel>
+              <ControlLabel>{'服务器URL'}</ControlLabel>
               <FormControl
                 id='teamUrlInput'
                 type='text'
@@ -181,7 +181,7 @@ export default class NewTeamModal extends React.Component {
                 }}
               />
               <FormControl.Feedback/>
-              <HelpBlock className='NewTeamModal-noBottomSpace'>{'The URL of your Mattermost server. Must start with http:// or https://.'}</HelpBlock>
+              <HelpBlock className='NewTeamModal-noBottomSpace'>{'您的华信服务器网址。必须以 http:// 或 https:// 开头。'}</HelpBlock>
             </FormGroup>
           </form>
         </Modal.Body>
@@ -196,7 +196,7 @@ export default class NewTeamModal extends React.Component {
           <Button
             id='cancelNewServerModal'
             onClick={this.props.onClose}
-          >{'Cancel'}</Button>
+          >{'取消'}</Button>
           <Button
             id='saveNewServerModal'
             onClick={this.save.bind(this)}

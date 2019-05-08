@@ -1,12 +1,12 @@
 {
-  "name": "steedos-messenger-desktop",
+  "name": "messenger-desktop",
   "productName": "华信",
   "desktopName": "SteedosMessenger.desktop",
-  "version": "4.3.0-develop",
+  "version": "4.2.1",
   "description": "华信",
   "main": "main_bundle.js",
   "author": "Steedos, Inc. <support@steedos.com>",
-  "homepage": "https://about.mattermost.com",
+  "homepage": "https://www.steedos.com/cn/messenger/",
   "license": "Apache-2.0",
   "dependencies": {
     "auto-launch": "^5.0.5",

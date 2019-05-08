@@ -563,19 +563,19 @@ app.on('ready', () => {
           if (process.platform === 'darwin') {
             trayIcon.setPressedImage(trayImages.clicked.mention);
           }
-          trayIcon.setToolTip('Session Expired: Please sign in to continue receiving notifications.');
+          trayIcon.setToolTip('登录已超时：重新登录之后才能收到推送消息。');
         } else if (arg.mentionCount > 0) {
           trayIcon.setImage(trayImages.mention);
           if (process.platform === 'darwin') {
             trayIcon.setPressedImage(trayImages.clicked.mention);
           }
-          trayIcon.setToolTip(arg.mentionCount + ' unread mentions');
+          trayIcon.setToolTip(arg.mentionCount + ' 未读提及');
         } else if (arg.unreadCount > 0) {
           trayIcon.setImage(trayImages.unread);
           if (process.platform === 'darwin') {
             trayIcon.setPressedImage(trayImages.clicked.unread);
           }
-          trayIcon.setToolTip(arg.unreadCount + ' unread channels');
+          trayIcon.setToolTip(arg.unreadCount + ' 未读频道');
         } else {
           trayIcon.setImage(trayImages.normal);
           if (process.platform === 'darwin') {

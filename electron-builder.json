@@ -1,7 +1,7 @@
 {
   "publish": [{
     "provider": "generic",
-    "url": "https://releases.mattermost.com/desktop/"
+    "url": "https://www-steedos-com.oss-cn-beijing.aliyuncs.com/apps/messenger/desktop/"
   }],
   "appId": "com.steedos.messenger.desktop",
   "artifactName": "${name}-${version}-${os}-${arch}.${ext}",
@@ -19,8 +19,8 @@
   ],
   "protocols": [
     {
-      "name": "Mattermost",
-      "schemes": ["mattermost"]
+      "name": "Steedos",
+      "schemes": ["steedos"]
     }
   ],
   "deb": {

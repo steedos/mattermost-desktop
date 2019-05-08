@@ -353,12 +353,12 @@ export default class SettingsPage extends React.Component {
           md={10}
           xs={8}
         >
-          <h2 style={settingsPage.sectionHeading}>{'Server Management'}</h2>
+          <h2 style={settingsPage.sectionHeading}>{'服务器管理'}</h2>
           <div className='IndicatorContainer'>
             <AutoSaveIndicator
               id='serversSaveIndicator'
               savingState={this.state.savingState.servers}
-              errorMessage={'Can\'t save your changes. Please try again.'}
+              errorMessage={'保存失败，请稍后重试。'}
             />
           </div>
         </Col>
@@ -372,7 +372,7 @@ export default class SettingsPage extends React.Component {
               id='addNewServer'
               href='#'
               onClick={this.toggleShowTeamForm}
-            >{'⊞ Add new server'}</a>
+            >{'⊞ 新增服务器'}</a>
           </p>
         </Col>
       </Row>
@@ -401,32 +401,32 @@ export default class SettingsPage extends React.Component {
           checked={this.state.autostart}
           onChange={this.handleChangeAutoStart}
         >
-          {'Start app on login'}
+          {'启动时自动加载'}
           <HelpBlock>
-            {'If enabled, the app starts automatically when you log in to your machine.'}
+            {'如果启用，登录时系统会自动运行此应用。'}
             {' '}
-            {'The app will initially start minimized and appear on the taskbar.'}
+            {'应用自动启动时会最小化并显示在任务栏中。'}
           </HelpBlock>
         </Checkbox>);
     }
 
-    options.push(
-      <Checkbox
-        key='inputSpellChecker'
-        id='inputSpellChecker'
-        ref='useSpellChecker'
-        checked={this.state.useSpellChecker}
-        onChange={this.handleChangeUseSpellChecker}
-      >
-        {'Check spelling'}
-        <HelpBlock>
-          {'Highlight misspelled words in your messages.'}
-          {' Available for English, French, German, Portuguese, Spanish, and Dutch.'}
-        </HelpBlock>
-      </Checkbox>);
+    // options.push(
+    //   <Checkbox
+    //     key='inputSpellChecker'
+    //     id='inputSpellChecker'
+    //     ref='useSpellChecker'
+    //     checked={this.state.useSpellChecker}
+    //     onChange={this.handleChangeUseSpellChecker}
+    //   >
+    //     {'Check spelling'}
+    //     <HelpBlock>
+    //       {'Highlight misspelled words in your messages.'}
+    //       {' Available for English, French, German, Portuguese, Spanish, and Dutch.'}
+    //     </HelpBlock>
+    //   </Checkbox>);
 
     if (process.platform === 'darwin' || process.platform === 'win32') {
-      const TASKBAR = process.platform === 'win32' ? 'taskbar' : 'Dock';
+      const TASKBAR = process.platform === 'win32' ? '任务栏' : '程序坞';
       options.push(
         <Checkbox
           key='inputShowUnreadBadge'
@@ -435,9 +435,9 @@ export default class SettingsPage extends React.Component {
           checked={this.state.showUnreadBadge}
           onChange={this.handleShowUnreadBadge}
         >
-          {`Show red badge on ${TASKBAR} icon to indicate unread messages`}
+          {`有未读消息时在 ${TASKBAR} 显示红色提醒图标`}
           <HelpBlock>
-            {`Regardless of this setting, mentions are always indicated with a red badge and item count on the ${TASKBAR} icon.`}
+            {`此设置只对未读消息生效，当有未读提及时，${TASKBAR} 始终会显示红色提醒图标。`}
           </HelpBlock>
         </Checkbox>);
     }
@@ -451,9 +451,9 @@ export default class SettingsPage extends React.Component {
           checked={this.state.notifications.flashWindow === 2}
           onChange={this.handleFlashWindow}
         >
-          {'Flash app window and taskbar icon when a new message is received'}
+          {'收到新消息时，闪烁应用程序窗口和任务栏图标'}
           <HelpBlock>
-            {'If enabled, app window and taskbar icon flash for a few seconds when a new message is received.'}
+            {'如果启用，当收到新消息时，应用程序窗口和任务栏图标会自动闪烁一段时间。'}
           </HelpBlock>
         </Checkbox>);
     }
@@ -470,7 +470,7 @@ export default class SettingsPage extends React.Component {
             onChange={this.handleBounceIcon}
             style={{marginRight: '10px'}}
           >
-            {'Bounce the Dock icon'}
+            {'程序坞图标弹跳'}
           </Checkbox>
           <Radio
             inline={true}
@@ -483,7 +483,7 @@ export default class SettingsPage extends React.Component {
             }
             onChange={this.handleBounceIconType}
           >
-            {'once'}
+            {'一次'}
           </Radio>
           {' '}
           <Radio
@@ -494,12 +494,12 @@ export default class SettingsPage extends React.Component {
             defaultChecked={this.state.notifications.bounceIconType === 'critical'}
             onChange={this.handleBounceIconType}
           >
-            {'until I open the app'}
+            {'直到我打开应用'}
           </Radio>
           <HelpBlock
             style={{marginLeft: '20px'}}
           >
-            {'If enabled, the Dock icon bounces once or until the user opens the app when a new notification is received.'}
+            {'如果启用，当收到新消息时，程序坞中的应用图标会一直弹跳直到用户打开应用。'}
           </HelpBlock>
         </FormGroup>
       );
@@ -514,9 +514,9 @@ export default class SettingsPage extends React.Component {
           checked={this.state.showTrayIcon}
           onChange={this.handleChangeShowTrayIcon}
         >
-          {process.platform === 'darwin' ? `Show ${remote.app.getName()} icon in the menu bar` : 'Show icon in the notification area'}
+          {process.platform === 'darwin' ? `在菜单栏显示 ${remote.app.getName()} 图标` : '在通知区域显示提醒图标'}
           <HelpBlock>
-            {'Setting takes effect after restarting the app.'}
+            {'更改此设置需要重新启动应用才会生效。'}
           </HelpBlock>
         </Checkbox>);
     }
@@ -576,10 +576,10 @@ export default class SettingsPage extends React.Component {
         checked={this.state.enableHardwareAcceleration}
         onChange={this.handleChangeEnableHardwareAcceleration}
       >
-        {'Use GPU hardware acceleration'}
+        {'使用 GPU 硬件加速'}
         <HelpBlock>
-          {'If enabled, Mattermost UI is rendered more efficiently but can lead to decreased stability for some systems.'}
-          {' Setting takes affect after restarting the app.'}
+          {'如果启用，华信将会运行的更快，但是在某些系统下也可能会运行不稳定。'}
+          {' 更改此设置需要重新启动应用才会生效。'}
         </HelpBlock>
       </Checkbox>
     );
@@ -587,12 +587,12 @@ export default class SettingsPage extends React.Component {
     const optionsRow = (options.length > 0) ? (
       <Row>
         <Col md={12}>
-          <h2 style={settingsPage.sectionHeading}>{'App Options'}</h2>
+          <h2 style={settingsPage.sectionHeading}>{'客户端选项'}</h2>
           <div className='IndicatorContainer'>
             <AutoSaveIndicator
               id='appOptionsSaveIndicator'
               savingState={this.state.savingState.appOptions}
-              errorMessage={'Can\'t save your changes. Please try again.'}
+              errorMessage={'保存失败，请稍后重试。'}
             />
           </div>
           { options.map((opt, i) => (
@@ -611,7 +611,7 @@ export default class SettingsPage extends React.Component {
           style={settingsPage.navbar}
         >
           <div style={{position: 'relative'}}>
-            <h1 style={settingsPage.heading}>{'Settings'}</h1>
+            <h1 style={settingsPage.heading}>{'设置'}</h1>
             <Button
               id='btnClose'
               className='CloseButton'

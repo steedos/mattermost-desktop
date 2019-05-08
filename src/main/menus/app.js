@@ -102,13 +102,13 @@ function createTemplate(mainWindow, config, isDev) {
   });
   template.push({
     label: '查看',
-    submenu: [{
+    submenu: [/*{
       label: '查找..',
       accelerator: 'CmdOrCtrl+F',
       click(item, focusedWindow) {
         focusedWindow.webContents.send('toggle-find');
       },
-    }, {
+    }, */{
       label: '重新载入',
       accelerator: 'CmdOrCtrl+R',
       click(item, focusedWindow) {
@@ -121,25 +121,13 @@ function createTemplate(mainWindow, config, isDev) {
         }
       },
     }, {
-      label: '清空缓存并重新载入',
-      accelerator: 'Shift+CmdOrCtrl+R',
-      click(item, focusedWindow) {
-        if (focusedWindow) {
-          if (focusedWindow === mainWindow) {
-            mainWindow.webContents.send('clear-cache-and-reload-tab');
-          } else {
-            focusedWindow.webContents.session.clearCache(() => {
-              focusedWindow.reload();
-            });
-          }
-        }
-      },
-    }, {
       role: 'togglefullscreen',
       label: '进入全屏幕',
     }, separatorItem, {
       role: 'resetzoom',
+      label: '实际大小',
     }, {
+      label: '放大',
       role: 'zoomin',
     }, {
       label: '放大 (隐藏)',
@@ -147,6 +135,7 @@ function createTemplate(mainWindow, config, isDev) {
       visible: false,
       role: 'zoomin',
     }, {
+      label: '缩小',
       role: 'zoomout',
     }, {
       label: '缩小 (隐藏)',
@@ -170,6 +159,20 @@ function createTemplate(mainWindow, config, isDev) {
       label: '开发工具（当前服务器）',
       click() {
         mainWindow.webContents.send('open-devtool');
+      },
+    }, {
+      label: '清空缓存并重新载入',
+      accelerator: 'Shift+CmdOrCtrl+R',
+      click(item, focusedWindow) {
+        if (focusedWindow) {
+          if (focusedWindow === mainWindow) {
+            mainWindow.webContents.send('clear-cache-and-reload-tab');
+          } else {
+            focusedWindow.webContents.session.clearCache(() => {
+              focusedWindow.reload();
+            });
+          }
+        }
       },
     }],
   });
@@ -203,8 +206,10 @@ function createTemplate(mainWindow, config, isDev) {
     label: '窗口',
     submenu: [{
       role: 'minimize',
+      label: '最小化',
     }, {
       role: 'close',
+      label: '关闭',
     }, separatorItem, ...teams.slice(0, 9).map((team, i) => {
       return {
         label: team.name,
@@ -253,7 +258,7 @@ function createTemplate(mainWindow, config, isDev) {
       },
     });
   }
-  template.push({label: '&Help', submenu});
+  template.push({label: '帮助', submenu});
   return template;
 }
 

@@ -30,7 +30,7 @@ function createUpdaterModal(parentWindow, options) {
   const windowWidth = 480;
   const windowHeight = 280;
   const windowOptions = {
-    title: `${app.getName()} Updater`,
+    title: `${app.getName()} 更新`,
     parent: parentWindow,
     modal: true,
     maximizable: false,
@@ -123,9 +123,9 @@ function initialize(appState, mainWindow, notifyOnly = false) {
         cancellationToken = new CancellationToken();
         downloadAndInstall(cancellationToken);
       }).on('click-download', () => {
-        shell.openExternal('https://about.mattermost.com/download/#mattermostApps');
+        shell.openExternal('https://www.steedos.com/cn/messenger/downloads');
       }).on('click-release-notes', () => {
-        shell.openExternal(`https://github.com/mattermost/desktop/releases/v${info.version}`);
+        shell.openExternal(`https://www.steedos.com/cn/messenger/downloads`);
       }).on('click-cancel', () => {
         cancellationToken.cancel();
         updaterModal.close();
@@ -138,9 +138,9 @@ function initialize(appState, mainWindow, notifyOnly = false) {
     if (autoUpdater.isManual) {
       dialog.showMessageBox(mainWindow, {
         type: 'info',
-        buttons: ['Close'],
-        title: 'Your Desktop App is up to date',
-        message: 'You have the latest version of the Mattermost Desktop App.',
+        buttons: ['关闭'],
+        title: '桌面客户端是最新版',
+        message: '您已经安装了最新的华信桌面客户端。',
       }, () => {}); // eslint-disable-line no-empty-function
     }
     setTimeout(() => {

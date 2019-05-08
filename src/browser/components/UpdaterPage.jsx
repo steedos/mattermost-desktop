@@ -11,14 +11,14 @@ function InstallButton(props) {
       <Button
         bsStyle='primary'
         onClick={props.onClickDownload}
-      >{'Download Update'}</Button>
+      >{'下载更新'}</Button>
     );
   }
   return (
     <Button
       bsStyle='primary'
       onClick={props.onClickInstall}
-    >{'Install Update'}</Button>
+    >{'安装更新'}</Button>
   );
 }
 

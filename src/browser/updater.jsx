@@ -35,7 +35,7 @@ class UpdaterPageContainer extends React.Component {
   render() {
     return (
       <UpdaterPage
-        appName={`${remote.app.getName()} Desktop App`}
+        appName={`${remote.app.getName()} 桌面客户端`}
         notifyOnly={this.props.notifyOnly}
         {...this.state}
         onClickReleaseNotes={() => {
