@@ -24,7 +24,7 @@
     }
   ],
   "deb": {
-    "synopsis": "Mattermost"
+    "synopsis": "Steedos"
   },
   "linux": {
     "category": "Network;InstantMessaging",
@@ -79,8 +79,10 @@
     "target": [
       "squirrel",
       "nsis",
+      "msi",
       "zip"
     ],
+    "icon": "icon.ico",
     "extraFiles": [
       {
         "filter": [

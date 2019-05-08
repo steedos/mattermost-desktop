@@ -13,7 +13,7 @@ function createTemplate(mainWindow, config, isDev) {
   };
 
   const appName = app.getName();
-  const firstMenuName = (process.platform === 'darwin') ? appName : 'File';
+  const firstMenuName = (process.platform === 'darwin') ? appName : '文件';
   const template = [];
 
   let platformAppMenu = process.platform === 'darwin' ? [{
