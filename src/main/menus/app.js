@@ -17,22 +17,22 @@ function createTemplate(mainWindow, config, isDev) {
   const template = [];
 
   let platformAppMenu = process.platform === 'darwin' ? [{
-    label: 'About ' + appName,
+    label: '关于 ' + appName,
     role: 'about',
     click() {
       dialog.showMessageBox(mainWindow, {
-        buttons: ['OK'],
-        message: `${appName} Desktop ${app.getVersion()}`,
+        buttons: ['好'],
+        message: `${appName} 桌面客户端 ${app.getVersion()}`,
       });
     },
   }, separatorItem, {
-    label: 'Preferences...',
+    label: '偏好设置...',
     accelerator: 'CmdOrCtrl+,',
     click() {
       mainWindow.loadURL(settingsURL);
     },
   }] : [{
-    label: 'Settings...',
+    label: '设置...',
     accelerator: 'CmdOrCtrl+,',
     click() {
       mainWindow.loadURL(settingsURL);
@@ -41,7 +41,7 @@ function createTemplate(mainWindow, config, isDev) {
 
   if (config.enableServerManagement === true) {
     platformAppMenu.push({
-      label: 'Sign in to Another Server',
+      label: '登录到另一个服务器',
       click() {
         mainWindow.webContents.send('add-server');
       },
@@ -51,15 +51,20 @@ function createTemplate(mainWindow, config, isDev) {
   platformAppMenu = platformAppMenu.concat(process.platform === 'darwin' ? [
     separatorItem, {
       role: 'hide',
+      label: '隐藏 ' + appName
     }, {
       role: 'hideothers',
+      label: '隐藏其他'
     }, {
       role: 'unhide',
+      label: '全部显示'
     }, separatorItem, {
       role: 'quit',
+      label: '退出 ' + appName
     }] : [
     separatorItem, {
       role: 'quit',
+      label: '退出 ' + appName,
       accelerator: 'CmdOrCtrl+Q',
       click() {
         app.quit();
@@ -74,31 +79,37 @@ function createTemplate(mainWindow, config, isDev) {
     ],
   });
   template.push({
-    label: '&Edit',
+    label: '编辑',
     submenu: [{
       role: 'undo',
+      label: '撤销',
     }, {
       role: 'redo',
+      label: '重做',
     }, separatorItem, {
       role: 'cut',
+      label: '剪切',
     }, {
       role: 'copy',
+      label: '复制',
     }, {
       role: 'paste',
+      label: '粘贴',
     }, {
       role: 'selectall',
+      label: '全部选中',
     }],
   });
   template.push({
-    label: '&View',
+    label: '查看',
     submenu: [{
-      label: 'Find..',
+      label: '查找..',
       accelerator: 'CmdOrCtrl+F',
       click(item, focusedWindow) {
         focusedWindow.webContents.send('toggle-find');
       },
     }, {
-      label: 'Reload',
+      label: '重新载入',
       accelerator: 'CmdOrCtrl+R',
       click(item, focusedWindow) {
         if (focusedWindow) {
@@ -110,7 +121,7 @@ function createTemplate(mainWindow, config, isDev) {
         }
       },
     }, {
-      label: 'Clear Cache and Reload',
+      label: '清空缓存并重新载入',
       accelerator: 'Shift+CmdOrCtrl+R',
       click(item, focusedWindow) {
         if (focusedWindow) {
@@ -125,24 +136,25 @@ function createTemplate(mainWindow, config, isDev) {
       },
     }, {
       role: 'togglefullscreen',
+      label: '进入全屏幕',
     }, separatorItem, {
       role: 'resetzoom',
     }, {
       role: 'zoomin',
     }, {
-      label: 'Zoom In (hidden)',
+      label: '放大 (隐藏)',
       accelerator: 'CmdOrCtrl+=',
       visible: false,
       role: 'zoomin',
     }, {
       role: 'zoomout',
     }, {
-      label: 'Zoom Out (hidden)',
+      label: '缩小 (隐藏)',
       accelerator: 'CmdOrCtrl+Shift+-',
       visible: false,
       role: 'zoomout',
     }, separatorItem, {
-      label: 'Developer Tools for Application Wrapper',
+      label: '开发工具（桌面客户端）',
       accelerator: (() => {
         if (process.platform === 'darwin') {
           return 'Alt+Command+I';
@@ -155,16 +167,16 @@ function createTemplate(mainWindow, config, isDev) {
         }
       },
     }, {
-      label: 'Developer Tools for Current Server',
+      label: '开发工具（当前服务器）',
       click() {
         mainWindow.webContents.send('open-devtool');
       },
     }],
   });
   template.push({
-    label: '&History',
+    label: '历史记录',
     submenu: [{
-      label: 'Back',
+      label: '返回',
       accelerator: process.platform === 'darwin' ? 'Cmd+[' : 'Alt+Left',
       click: (item, focusedWindow) => {
         if (focusedWindow === mainWindow) {
@@ -174,7 +186,7 @@ function createTemplate(mainWindow, config, isDev) {
         }
       },
     }, {
-      label: 'Forward',
+      label: '前进',
       accelerator: process.platform === 'darwin' ? 'Cmd+]' : 'Alt+Right',
       click: (item, focusedWindow) => {
         if (focusedWindow === mainWindow) {
@@ -188,7 +200,7 @@ function createTemplate(mainWindow, config, isDev) {
 
   const teams = config.teams;
   const windowMenu = {
-    label: '&Window',
+    label: '窗口',
     submenu: [{
       role: 'minimize',
     }, {
@@ -203,14 +215,14 @@ function createTemplate(mainWindow, config, isDev) {
         },
       };
     }), separatorItem, {
-      label: 'Select Next Server',
+      label: '选择下一服务器',
       accelerator: 'Ctrl+Tab',
       click() {
         mainWindow.webContents.send('select-next-tab');
       },
       enabled: (teams.length > 1),
     }, {
-      label: 'Select Previous Server',
+      label: '选择前一服务器',
       accelerator: 'Ctrl+Shift+Tab',
       click() {
         mainWindow.webContents.send('select-previous-tab');
@@ -222,7 +234,7 @@ function createTemplate(mainWindow, config, isDev) {
   const submenu = [];
   if (config.helpLink) {
     submenu.push({
-      label: 'Learn More...',
+      label: '了解更多...',
       click() {
         shell.openExternal(config.helpLink);
       },
@@ -230,12 +242,12 @@ function createTemplate(mainWindow, config, isDev) {
     submenu.push(separatorItem);
   }
   submenu.push({
-    label: `Version ${app.getVersion()}`,
+    label: `版本 ${app.getVersion()}`,
     enabled: false,
   });
   if (config.enableAutoUpdater) {
     submenu.push({
-      label: 'Check for Updates...',
+      label: '检查更新...',
       click() {
         ipcMain.emit('check-for-updates', true);
       },

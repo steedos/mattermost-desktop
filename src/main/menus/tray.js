@@ -25,7 +25,7 @@ function createTemplate(mainWindow, config, isDev) {
     }), {
       type: 'separator',
     }, {
-      label: process.platform === 'darwin' ? 'Preferences...' : 'Settings',
+      label: process.platform === 'darwin' ? '偏好设置...' : '设置',
       click: () => {
         mainWindow.loadURL(settingsURL);
         showOrRestore(mainWindow);
@@ -39,6 +39,7 @@ function createTemplate(mainWindow, config, isDev) {
       type: 'separator',
     }, {
       role: 'quit',
+      label: '退出'
     },
   ];
   return template;
