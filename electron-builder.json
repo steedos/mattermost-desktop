@@ -24,7 +24,7 @@
     }
   ],
   "deb": {
-    "synopsis": "Mattermost"
+    "synopsis": "Steedos"
   },
   "linux": {
     "category": "Network;InstantMessaging",
@@ -78,8 +78,10 @@
   "win": {
     "target": [
       "nsis",
+      "msi",
       "zip"
     ],
+    "icon": "icon.ico",
     "extraFiles": [
       {
         "filter": [
