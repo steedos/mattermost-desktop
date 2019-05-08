@@ -1,7 +1,6 @@
 // Copyright (c) 2015-2016 Yuya Ochiai
 // Copyright (c) 2016-present Mattermost, Inc. All Rights Reserved.
 // See LICENSE.txt for license information.
-
 import os from 'os';
 import path from 'path';
 
@@ -29,13 +28,15 @@ import CriticalErrorHandler from './main/CriticalErrorHandler';
 import upgradeAutoLaunch from './main/autoLaunch';
 import autoUpdater from './main/autoUpdater';
 
+//app.setAppUserModelId('com.steedos.Messenger'); // Use explicit AppUserModelID
+if(require('electron-squirrel-startup')) app.quit();
+
 const criticalErrorHandler = new CriticalErrorHandler();
 
 process.on('uncaughtException', criticalErrorHandler.processUncaughtExceptionHandler.bind(criticalErrorHandler));
 
 global.willAppQuit = false;
 
-app.setAppUserModelId('com.squirrel.mattermost.Mattermost'); // Use explicit AppUserModelID
 
 import RegistryConfig from './common/config/RegistryConfig';
 import Config from './common/config';
