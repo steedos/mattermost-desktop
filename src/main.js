@@ -28,8 +28,8 @@ import CriticalErrorHandler from './main/CriticalErrorHandler';
 import upgradeAutoLaunch from './main/autoLaunch';
 import autoUpdater from './main/autoUpdater';
 
-//app.setAppUserModelId('com.steedos.Messenger'); // Use explicit AppUserModelID
-if(require('electron-squirrel-startup')) app.quit();
+app.setAppUserModelId('com.steedos.messenger.desktop'); // Use explicit AppUserModelID
+// if(require('electron-squirrel-startup')) app.quit();
 
 const criticalErrorHandler = new CriticalErrorHandler();
 
