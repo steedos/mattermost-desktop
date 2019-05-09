@@ -122,7 +122,7 @@ function createTemplate(mainWindow, config, isDev) {
       },
     }, {
       role: 'togglefullscreen',
-      label: '进入全屏幕',
+      label: '切换全屏幕',
     }, separatorItem, {
       role: 'resetzoom',
       label: '实际大小',
