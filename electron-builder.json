@@ -1,9 +1,9 @@
 {
   "publish": [{
     "provider": "generic",
-    "url": "https://www-steedos-com.oss-cn-beijing.aliyuncs.com/apps/messenger/desktop/"
+    "url": "https://www-steedos-com.oss-cn-beijing.aliyuncs.com/apps/messenger/desktop/${version}"
   }],
-  "appId": "com.steedos.Messenger",
+  "appId": "com.steedos.messenger.desktop",
   "artifactName": "${name}-${version}-${os}-${arch}.${ext}",
   "directories": {
     "buildResources": "resources",
@@ -77,10 +77,7 @@
   },
   "win": {
     "target": [
-      "squirrel",
-      "nsis",
-      "msi",
-      "zip"
+      "nsis"
     ],
     "icon": "icon.ico",
     "extraFiles": [
