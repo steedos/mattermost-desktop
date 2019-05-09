@@ -7,7 +7,7 @@ import {EventEmitter} from 'events';
 import WindowsRegistry from 'winreg';
 
 const REGISTRY_HIVE_LIST = [WindowsRegistry.HKLM, WindowsRegistry.HKCU];
-const BASE_REGISTRY_KEY_PATH = '\\Software\\Policies\\Mattermost';
+const BASE_REGISTRY_KEY_PATH = '\\Software\\Policies\\SteedosMessenger';
 
 export default class RegistryConfig extends EventEmitter {
   constructor() {
