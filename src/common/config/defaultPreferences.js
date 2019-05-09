@@ -13,7 +13,7 @@ const defaultPreferences = {
   trayIconTheme: 'light',
   minimizeToTray: false,
   notifications: {
-    flashWindow: 0,
+    flashWindow: 2,
     bounceIcon: true,
     bounceIconType: 'informational',
   },
