@@ -480,9 +480,11 @@ app.on('ready', () => {
   mainWindow.webContents.on('crashed', () => {
     throw new Error('webContents \'crashed\' event has been emitted');
   });
-  mainWindow.on('ready-to-show', () => {
-    autoUpdater.checkForUpdates();
-  });
+  if (config.enableAutoUpdater) {
+    mainWindow.on('ready-to-show', () => {
+      autoUpdater.checkForUpdates();
+    });
+  }
 
   ipcMain.on('notified', () => {
     if (process.platform === 'win32' || process.platform === 'linux') {
