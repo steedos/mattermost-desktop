@@ -44,7 +44,7 @@ export default class EnhancedNotification extends OriginalNotification {
 
   set onclick(handler) {
     super.onclick = () => {
-      const currentWindow = remote.getCurrentWindow();
+      const currentWindow = remote.BrowserWindow.getAllWindows()[0]; //remote.getCurrentWindow();
       if (process.platform === 'win32') {
         // show() breaks Aero Snap state.
         if (currentWindow.isVisible()) {
