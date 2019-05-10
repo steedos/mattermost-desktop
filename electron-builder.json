@@ -77,7 +77,8 @@
   },
   "win": {
     "target": [
-      "nsis"
+      "nsis",
+      "appx"
     ],
     "icon": "icon.ico",
     "extraFiles": [
@@ -88,6 +89,15 @@
         ]
       }
     ]
+  },
+  "appx": {
+    "applicationId": "com.steedos.messenger.desktop",
+    "displayName": "华信",
+    "identityName": "951C92F6.2604342FC116E",
+    "publisher": "CN=FB8D4C38-D9BA-43BF-A6C4-D2BF133AC2D1",
+    "publisherDisplayName": "华炎软件",
+    "languages": "zh-CN",
+    "addAutoLaunchExtension": true
   },
   "nsis": {
     "artifactName": "${name}-setup-${version}-win.${ext}"
