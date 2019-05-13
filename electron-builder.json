@@ -88,14 +88,17 @@
           "NOTICE.txt"
         ]
       }
-    ]
+    ],
+    "signingHashAlgorithms": ["sha1", "sha256"],
+    "certificateSubjectName": "上海华炎软件科技有限公司",
+    "timeStampServer": "http://timestamp.digicert.com"
   },
   "appx": {
     "applicationId": "com.steedos.messenger.desktop",
-    "displayName": "鍗庝俊",
+    "displayName": "华信",
     "identityName": "951C92F6.2604342FC116E",
     "publisher": "CN=FB8D4C38-D9BA-43BF-A6C4-D2BF133AC2D1",
-    "publisherDisplayName": "鍗庣値杞欢",
+    "publisherDisplayName": "华炎软件",
     "languages": "zh-CN",
     "addAutoLaunchExtension": true
   },
