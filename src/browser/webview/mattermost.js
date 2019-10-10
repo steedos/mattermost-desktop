@@ -8,6 +8,7 @@
 import {ipcRenderer, webFrame, remote} from 'electron';
 
 import initializeNWJS from '../js/nwjs';
+initializeNWJS(window);
 
 const UNREAD_COUNT_INTERVAL = 1000;
 const CLEAR_CACHE_INTERVAL = 6 * 60 * 60 * 1000; // 6 hours
@@ -39,7 +40,7 @@ function watchReactAppUntilInitialized(callback) {
 }
 
 window.addEventListener('load', () => {
-  initializeNWJS();
+
   if (document.getElementById('root') === null) {
     console.log('The guest is not assumed as mattermost-webapp');
     ipcRenderer.sendToHost('onGuestInitialized');

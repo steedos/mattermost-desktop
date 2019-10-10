@@ -375,7 +375,7 @@ function handleAppWebContentsCreated(dc, contents) {
 
   contents.on('will-attach-webview', (event, webPreferences) => {
     webPreferences.nodeIntegration = false;
-    webPreferences.contextIsolation = true;
+    webPreferences.contextIsolation = false;
   });
 
   contents.on('will-navigate', (event, url) => {
