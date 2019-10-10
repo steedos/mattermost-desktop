@@ -42,7 +42,6 @@ export default function initializeNWJS(window) {
   if (hostname.endsWith('.steedos.com') ||
       hostname.endsWith('.steedos.cn') ||
       hostname.endsWith('steedos.ticp.net') ||
-      hostname.endsWith('github.com') ||
       hostname.endsWith('localhost') ||
       hostname.endsWith('127.0.0.1')
   ) {
