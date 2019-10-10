@@ -3,7 +3,7 @@
 // See LICENSE.txt for license information.
 'use strict';
 
-import {app, dialog, ipcMain, Menu, shell} from 'electron';
+import {app, dialog, Menu, shell} from 'electron';
 
 function createTemplate(mainWindow, config, isDev) {
   const settingsURL = isDev ? 'http://localhost:8080/browser/settings.html' : `file://${app.getAppPath()}/browser/settings.html`;
@@ -207,6 +207,9 @@ function createTemplate(mainWindow, config, isDev) {
     submenu: [{
       role: 'minimize',
       label: '最小化',
+
+      // empty string removes shortcut on Windows; null will default by OS
+      accelerator: process.platform === 'win32' ? '' : null,
     }, {
       role: 'close',
       label: '关闭',
@@ -250,14 +253,7 @@ function createTemplate(mainWindow, config, isDev) {
     label: `版本 ${app.getVersion()}`,
     enabled: false,
   });
-  if (config.enableAutoUpdater) {
-    submenu.push({
-      label: '检查更新...',
-      click() {
-        ipcMain.emit('check-for-updates', true);
-      },
-    });
-  }
+
   template.push({label: '帮助', submenu});
   return template;
 }

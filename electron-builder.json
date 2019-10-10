@@ -64,7 +64,8 @@
           "NOTICE.txt"
         ]
       }
-    ]
+    ],
+    "hardenedRuntime": true
   },
   "dmg": {
     "background": "resources/osx/DMG_BG.png",

@@ -3,16 +3,14 @@
 // See LICENSE.txt for license information.
 'use strict';
 
-import {ipcRenderer, webFrame} from 'electron';
+/* eslint-disable no-magic-numbers */
 
-import EnhancedNotification from '../js/notification';
+import {ipcRenderer, webFrame, remote} from 'electron';
+
 import initializeNWJS from '../js/nwjs';
 
 const UNREAD_COUNT_INTERVAL = 1000;
-//eslint-disable-next-line no-magic-numbers
 const CLEAR_CACHE_INTERVAL = 6 * 60 * 60 * 1000; // 6 hours
-
-Notification = EnhancedNotification; // eslint-disable-line no-global-assign, no-native-reassign
 
 Reflect.deleteProperty(global.Buffer); // http://electron.atom.io/docs/tutorial/security/#buffer-global
 
@@ -41,6 +39,7 @@ function watchReactAppUntilInitialized(callback) {
 }
 
 window.addEventListener('load', () => {
+  initializeNWJS();
   if (document.getElementById('root') === null) {
     console.log('The guest is not assumed as mattermost-webapp');
     ipcRenderer.sendToHost('onGuestInitialized');
@@ -49,6 +48,46 @@ window.addEventListener('load', () => {
   watchReactAppUntilInitialized(() => {
     ipcRenderer.sendToHost('onGuestInitialized', window.basename);
   });
+});
+
+// listen for messages from the webapp
+window.addEventListener('message', ({origin, data: {type, message = {}} = {}} = {}) => {
+  if (origin !== window.location.origin) {
+    return;
+  }
+  switch (type) {
+  case 'webapp-ready': {
+    // register with the webapp to enable custom integration functionality
+    window.postMessage(
+      {
+        type: 'register-desktop',
+        message: {
+          version: remote.app.getVersion(),
+        },
+      },
+      window.location.origin
+    );
+    break;
+  }
+  case 'dispatch-notification': {
+    const {title, body, channel, teamId, silent} = message;
+    ipcRenderer.sendToHost('dispatchNotification', title, body, channel, teamId, silent);
+    break;
+  }
+  }
+});
+
+ipcRenderer.on('notification-clicked', (event, {channel, teamId}) => {
+  window.postMessage(
+    {
+      type: 'notification-clicked',
+      message: {
+        channel,
+        teamId,
+      },
+    },
+    window.location.origin
+  );
 });
 
 function hasClass(element, className) {
@@ -91,7 +130,7 @@ function getUnreadCount() {
   }
 
   // mentionCount in sidebar
-  const elem = document.getElementsByClassName('badge');
+  const elem = document.querySelectorAll('#sidebar-left .badge, #channel_view .badge');
   let mentionCount = 0;
   for (let i = 0; i < elem.length; i++) {
     if (isElementVisible(elem[i]) && !hasClass(elem[i], 'badge-notify')) {
@@ -184,16 +223,25 @@ function resetMisspelledState() {
 
 function setSpellChecker() {
   const spellCheckerLocale = ipcRenderer.sendSync('get-spellchecker-locale');
-  webFrame.setSpellCheckProvider(spellCheckerLocale, false, {
-    spellCheck(text) {
-      const res = ipcRenderer.sendSync('checkspell', text);
-      return res === null ? true : res;
+  webFrame.setSpellCheckProvider(spellCheckerLocale, {
+    spellCheck(words, callback) {
+      const misspeltWords = words.filter((text) => {
+        const res = ipcRenderer.sendSync('checkspell', text);
+        const isCorrect = (res === null) ? true : res;
+        return !isCorrect;
+      });
+      callback(misspeltWords);
     },
   });
   resetMisspelledState();
 }
 setSpellChecker();
 ipcRenderer.on('set-spellchecker', setSpellChecker);
+
+// push user activity updates to the webapp
+ipcRenderer.on('user-activity-update', (event, {userIsActive, isSystemEvent}) => {
+  window.postMessage({type: 'user-activity-update', message: {userIsActive, manual: isSystemEvent}}, window.location.origin);
+});
 
 // mattermost-webapp is SPA. So cache is not cleared due to no navigation.
 // We needed to manually clear cache to free memory in long-term-use.
@@ -202,4 +250,4 @@ setInterval(() => {
   webFrame.clearCache();
 }, CLEAR_CACHE_INTERVAL);
 
-initializeNWJS();
+/* eslint-enable no-magic-numbers */
