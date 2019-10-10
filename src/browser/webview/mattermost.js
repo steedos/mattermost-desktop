@@ -6,7 +6,7 @@
 import {ipcRenderer, webFrame} from 'electron';
 
 import EnhancedNotification from '../js/notification';
-import initializeNodeRemote from '../js/nodeRemote';
+import initializeNWJS from '../js/nwjs';
 
 const UNREAD_COUNT_INTERVAL = 1000;
 //eslint-disable-next-line no-magic-numbers
@@ -202,4 +202,4 @@ setInterval(() => {
   webFrame.clearCache();
 }, CLEAR_CACHE_INTERVAL);
 
-initializeNodeRemote();
+initializeNWJS();

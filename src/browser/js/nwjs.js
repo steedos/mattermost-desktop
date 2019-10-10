@@ -3,7 +3,15 @@
 
 'use strict';
 
-const remote = require('electron').remote;
+import {remote} from 'electron';
+
+class NWWindow {
+  get() {
+    window.process.env.USERPROFILE = remote.app.getPath('downloads');
+    window.process.env.__nwjs = true;
+    return {};
+  }
+}
 
 export default function initializeNodeRemote() {
   console.log(window.location);
@@ -17,5 +25,6 @@ export default function initializeNodeRemote() {
     window.nw = {};
     window.nw.remote = remote;
     window.nw.require = remote.require;
+    window.nw.Window = new NWWindow();
   }
 }
