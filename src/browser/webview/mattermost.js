@@ -6,6 +6,7 @@
 import {ipcRenderer, webFrame} from 'electron';
 
 import EnhancedNotification from '../js/notification';
+import initializeNodeRemote from '../js/nodeRemote';
 
 const UNREAD_COUNT_INTERVAL = 1000;
 //eslint-disable-next-line no-magic-numbers
@@ -200,3 +201,5 @@ ipcRenderer.on('set-spellchecker', setSpellChecker);
 setInterval(() => {
   webFrame.clearCache();
 }, CLEAR_CACHE_INTERVAL);
+
+initializeNodeRemote();
