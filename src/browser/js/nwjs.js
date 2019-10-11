@@ -6,10 +6,15 @@
 
 import {remote} from 'electron';
 
+const processCWD = () => {
+  return process.cwd();
+};
+
 class NWWindow {
   get() {
     window.process.env.USERPROFILE = remote.app.getPath('downloads');
     window.process.env.__nwjs = true;
+    window.process.cwd = processCWD;
     return {};
   }
 }
