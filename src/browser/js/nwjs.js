@@ -42,7 +42,7 @@ export function nwjsRequire(module) {
   }
 }
 
-export default function initializeNWJS(window) {
+export default function initializeNWJS(ipcRenderer) {
   const hostname = window.location.hostname;
   if (hostname.endsWith('.steedos.com') ||
       hostname.endsWith('.steedos.cn') ||
@@ -54,5 +54,6 @@ export default function initializeNWJS(window) {
     window.nw.remote = remote;
     window.nw.require = nwjsRequire;
     window.nw.Window = new NWWindow();
+    window.nw.ipcRenderer = ipcRenderer
   }
 }
