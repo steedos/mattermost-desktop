@@ -1,4 +1,35 @@
-# Mattermost Desktop
+# Steedos Desktop
+
+
+## 安装证书
+
+发布Windows版本之前，必须在本机安装签名证书。
+
+- 下载并安装 safenet authentication client 
+- 插入 包含签名证书的 USB Key
+- 点击右下角Safenet图标，选中证书，选择安装到本地计算机。
+
+在PowerShell中执行以下命令，可以查看已安装的证书。 
+```shell
+ Get-ChildItem -Recurse Cert: -CodeSigningCert | Select-Object -Property Subject,PSParentPath,Thumbprint
+```
+
+## 签名VBS
+
+需要先安装 signtool
+
+```
+"C:\Program Files (x86)\Windows Kits\10\bin\10.0.18362.0\x64\signtool.exe" sign /a edit.vbs
+```
+
+## 打包
+
+```
+yarn
+yarn package:windows
+```
+
+大概会弹出十几遍要求输入密码。
 
 Native desktop application for [Mattermost](http://www.mattermost.org/) running on Windows, Mac, and Linux.
 
