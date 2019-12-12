@@ -107,7 +107,7 @@ export default class NewTeamModal extends React.Component {
 
   getSaveButtonLabel() {
     if (this.props.editMode) {
-      return '编辑';
+      return '保存';
     }
     return '新增';
   }

@@ -2,7 +2,7 @@
   "name": "messenger",
   "productName": "华信",
   "desktopName": "SteedosMessenger.desktop",
-  "version": "4.3.0",
+  "version": "4.3.1",
   "description": "华信",
   "main": "main_bundle.js",
   "author": "上海华炎软件科技有限公司. <support@steedos.com>",

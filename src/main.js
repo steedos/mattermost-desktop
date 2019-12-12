@@ -421,7 +421,7 @@ function handleAppWebContentsCreated(dc, contents) {
 }
 
 function initializeAfterAppReady() {
-  app.setAppUserModelId('Mattermost.Desktop'); // Use explicit AppUserModelID
+  app.setAppUserModelId('com.steedos.messenger.desktop'); // Use explicit AppUserModelID in electron-build.json
 
   const appStateJson = path.join(app.getPath('userData'), 'app-state.json');
   appState = new AppStateManager(appStateJson);
