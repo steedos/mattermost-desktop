@@ -340,7 +340,7 @@ export default class MattermostView extends React.Component {
           src={this.props.src}
           ref={this.webviewRef}
         />
-        { loadingImage }
+        {/* { loadingImage } */}
       </div>);
   }
 }
