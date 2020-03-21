@@ -24,7 +24,7 @@ const preloadJS = `file://${remote.app.getAppPath()}/browser/webview/mattermost_
 const ERR_NOT_IMPLEMENTED = -11;
 const U2F_EXTENSION_URL = 'chrome-extension://kmendfapggjehodndflmmgagdbamhnfd/u2f-comms.html';
 
-const appIconURL = `file:///${remote.app.getAppPath()}/assets/appicon.png`;
+const appIconURL = `file:///${remote.app.getAppPath()}/assets/appicon_48.png`;
 
 export default class MattermostView extends React.Component {
   constructor(props) {
@@ -38,29 +38,16 @@ export default class MattermostView extends React.Component {
       basename: '/',
     };
 
-    this.handleUnreadCountChange = this.handleUnreadCountChange.bind(this);
-    this.dispatchNotification = this.dispatchNotification.bind(this);
-    this.reload = this.reload.bind(this);
-    this.clearCacheAndReload = this.clearCacheAndReload.bind(this);
-    this.focusOnWebView = this.focusOnWebView.bind(this);
-    this.canGoBack = this.canGoBack.bind(this);
-    this.canGoForward = this.canGoForward.bind(this);
-    this.goBack = this.goBack.bind(this);
-    this.goForward = this.goForward.bind(this);
-    this.getSrc = this.getSrc.bind(this);
-    this.handleDeepLink = this.handleDeepLink.bind(this);
-    this.handleUserActivityUpdate = this.handleUserActivityUpdate.bind(this);
-
     this.webviewRef = React.createRef();
   }
 
-  handleUnreadCountChange(sessionExpired, unreadCount, mentionCount, isUnread, isMentioned) {
+  handleUnreadCountChange = (sessionExpired, unreadCount, mentionCount, isUnread, isMentioned) => {
     if (this.props.onBadgeChange) {
       this.props.onBadgeChange(sessionExpired, unreadCount, mentionCount, isUnread, isMentioned);
     }
   }
 
-  async dispatchNotification(title, body, channel, teamId, silent) {
+  dispatchNotification = async (title, body, channel, teamId, silent) => {
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
       log.error('Notifications not granted');
@@ -131,13 +118,22 @@ export default class MattermostView extends React.Component {
         } else if (destURL.path.match(/^\/help\//)) {
           // continue to open special case internal urls in default browser
           shell.openExternal(e.url);
-        } else {
+        } else if (Utils.isTeamUrl(this.props.src, e.url, true) || Utils.isPluginUrl(this.props.src, e.url)) {
           // New window should disable nodeIntegration.
           window.open(e.url, remote.app.getName(), 'nodeIntegration=no, contextIsolation=yes, show=yes');
+        } else {
+          e.preventDefault();
+          shell.openExternal(e.url);
         }
       } else {
-        // if the link is external, use default browser.
-        shell.openExternal(e.url);
+        const parsedURL = Utils.parseURL(e.url);
+        const serverURL = Utils.getServer(parsedURL, this.props.teams);
+        if (serverURL !== null && Utils.isTeamUrl(serverURL.url, parsedURL)) {
+          this.props.handleInterTeamLink(parsedURL);
+        } else {
+          // if the link is external, use default os' application.
+          ipcRenderer.send('confirm-protocol', destURL.protocol, e.url);
+        }
       }
     });
 
@@ -192,6 +188,12 @@ export default class MattermostView extends React.Component {
       case 'onNotificationClick':
         self.props.onNotificationClick();
         break;
+      case 'mouse-move':
+        this.handleMouseMove(event.args[0]);
+        break;
+      case 'mouse-up':
+        this.handleMouseUp();
+        break;
       }
     });
 
@@ -223,14 +225,16 @@ export default class MattermostView extends React.Component {
 
     // start listening for user status updates from main
     ipcRenderer.on('user-activity-update', this.handleUserActivityUpdate);
+    ipcRenderer.on('exit-fullscreen', this.handleExitFullscreen);
   }
 
   componentWillUnmount() {
     // stop listening for user status updates from main
     ipcRenderer.removeListener('user-activity-update', this.handleUserActivityUpdate);
+    ipcRenderer.removeListener('exit-fullscreen', this.handleExitFullscreen);
   }
 
-  reload() {
+  reload = () => {
     clearTimeout(this.state.reloadTimeoutID);
     this.setState({
       errorInfo: null,
@@ -241,7 +245,7 @@ export default class MattermostView extends React.Component {
     webview.reload();
   }
 
-  clearCacheAndReload() {
+  clearCacheAndReload = () => {
     this.setState({
       errorInfo: null,
     });
@@ -251,41 +255,53 @@ export default class MattermostView extends React.Component {
     });
   }
 
-  focusOnWebView() {
+  focusOnWebView = () => {
     const webview = this.webviewRef.current;
     const webContents = webview.getWebContents(); // webContents might not be created yet.
-    if (webContents && !webContents.isFocused()) {
+    if (webContents) {
       webview.focus();
       webContents.focus();
     }
   }
 
-  canGoBack() {
+  handleMouseMove = (event) => {
+    const moveEvent = document.createEvent('MouseEvents');
+    moveEvent.initMouseEvent('mousemove', null, null, null, null, null, null, event.clientX, event.clientY);
+    document.dispatchEvent(moveEvent);
+  }
+
+  handleMouseUp = () => {
+    const upEvent = document.createEvent('MouseEvents');
+    upEvent.initMouseEvent('mouseup');
+    document.dispatchEvent(upEvent);
+  }
+
+  canGoBack = () => {
     const webview = this.webviewRef.current;
     return webview.getWebContents().canGoBack();
   }
 
-  canGoForward() {
+  canGoForward = () => {
     const webview = this.webviewRef.current;
     return webview.getWebContents().canGoForward();
   }
 
-  goBack() {
+  goBack = () => {
     const webview = this.webviewRef.current;
     webview.getWebContents().goBack();
   }
 
-  goForward() {
+  goForward = () => {
     const webview = this.webviewRef.current;
     webview.getWebContents().goForward();
   }
 
-  getSrc() {
+  getSrc = () => {
     const webview = this.webviewRef.current;
     return webview.src;
   }
 
-  handleDeepLink(relativeUrl) {
+  handleDeepLink = (relativeUrl) => {
     const webview = this.webviewRef.current;
     webview.executeJavaScript(
       'history.pushState(null, null, "' + relativeUrl + '");'
@@ -295,9 +311,14 @@ export default class MattermostView extends React.Component {
     );
   }
 
-  handleUserActivityUpdate(event, status) {
+  handleUserActivityUpdate = (event, status) => {
     // pass user activity update to the webview
     this.webviewRef.current.send('user-activity-update', status);
+  }
+
+  handleExitFullscreen = () => {
+    // pass exit fullscreen request to the webview
+    this.webviewRef.current.send('exit-fullscreen');
   }
 
   render() {
@@ -307,7 +328,6 @@ export default class MattermostView extends React.Component {
         className='errorView'
         errorInfo={this.state.errorInfo}
         active={this.props.active}
-        withTab={this.props.withTab}
       />) : null;
 
     // Need to keep webview mounted when failed to load.
@@ -315,7 +335,7 @@ export default class MattermostView extends React.Component {
     if (this.props.withTab) {
       classNames.push('mattermostView-with-tab');
     }
-    if (!this.props.active || this.state.errorInfo) {
+    if (!this.props.active) {
       classNames.push('mattermostView-hidden');
     }
 
@@ -348,13 +368,15 @@ export default class MattermostView extends React.Component {
 MattermostView.propTypes = {
   name: PropTypes.string,
   id: PropTypes.string,
+  teams: PropTypes.array.isRequired,
+  withTab: PropTypes.bool,
   onTargetURLChange: PropTypes.func,
   onBadgeChange: PropTypes.func,
   src: PropTypes.string,
   active: PropTypes.bool,
-  withTab: PropTypes.bool,
   useSpellChecker: PropTypes.bool,
   onSelectSpellCheckerLocale: PropTypes.func,
+  handleInterTeamLink: PropTypes.func,
 };
 
 /* eslint-enable react/no-set-state */

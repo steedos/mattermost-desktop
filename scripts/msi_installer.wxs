@@ -35,12 +35,12 @@
   - there are any changes in the feature hierarchy (child
     feature moving out of a parent, or a parent feature getting a new child).
   -->
-  <Product Id="*" UpgradeCode="8523DAF0-699D-4CC7-9A65-C5E696A9DE6D" Name="Mattermost Desktop" Manufacturer="Mattermost, Inc." Language="1033" Codepage="1252" Version="4.1.2">
+  <Product Id="*" UpgradeCode="8523DAF0-699D-4CC7-9A65-C5E696A9DE6D" Name="Mattermost" Manufacturer="Mattermost, Inc." Language="1033" Codepage="1252" Version="0.0.0">
     <!--
     perMachine installs the app system wide (ALLUSERS is set to 1)
     src.: https://www.joyofsetup.com/2008/04/01/new-wix-feature-setting-package-installation-scope/
     -->
-    <Package Id="*" Keywords="Installer" Description="Mattermost Desktop Installer" Manufacturer="Mattermost, Inc." InstallerVersion="400" Languages="1033" Compressed="yes" SummaryCodepage="1252" Platform="$(var.Platform)" InstallScope="perMachine" />
+    <Package Id="*" Keywords="Installer" Description="Mattermost Installer" Manufacturer="Mattermost, Inc." InstallerVersion="400" Languages="1033" Compressed="yes" SummaryCodepage="1252" Platform="$(var.Platform)" InstallScope="perMachine" />
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
     <!--
     Perform OS check requirements only if we are installing (not on repair/
@@ -53,8 +53,7 @@
     <?if $(var.Platform) != x64 ?>
     <Condition Message="!(loc.Requires32Bit)"><![CDATA[NOT VersionNT64]]></Condition>
     <?endif ?>
-    <!--<MajorUpgrade
-      DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." />-->
+    <MajorUpgrade AllowDowngrades="yes" />
     <!-- Retrieve previous installation path -->
     <Property Id="INSTALLDIR">
       <RegistrySearch Id="DetermineInstallLocation" Type="raw" Root="HKLM" Key="Software\Mattermost\Desktop" Name="InstallLocation" Win64="$(var.Win64)" />
@@ -66,12 +65,12 @@
             <Component Id="MainExecutableShortcutDesktop" Guid="9C71385D-C892-48BA-A35D-D89A661D2952" Win64="$(var.Win64)">
               <Condition><![CDATA[ADDDESKTOPSHORTCUT = "true"]]></Condition>
               <RegistryValue Id="RegShortcutDesktop" Root="HKCU" Key="SOFTWARE\Mattermost\Desktop\settings" Name="MattermostDesktopShortcutDesktop" Value="1" Type="integer" KeyPath="yes" />
-              <Shortcut Id="MattermostDesktopShortcutDesktop" Directory="DesktopFolder" Name="Mattermost Desktop" WorkingDirectory="INSTALLDIR" Icon="Mattermost.ico" IconIndex="0" Advertise="no" Target="[INSTALLDIR]Mattermost.exe" />
+              <Shortcut Id="MattermostDesktopShortcutDesktop" Directory="DesktopFolder" Name="Mattermost" WorkingDirectory="INSTALLDIR" Icon="Mattermost.ico" IconIndex="0" Advertise="no" Target="[INSTALLDIR]Mattermost.exe" />
             </Component>
             <Component Id="MainExecutableShortcutStartMenu" Guid="DF2028FF-7E03-407B-A46A-726E1B67DF83" Win64="$(var.Win64)">
               <Condition><![CDATA[ADDSTARTMENUSHORTCUT = "true"]]></Condition>
               <RegistryValue Id="RegShortcutStartMenu" Root="HKCU" Key="SOFTWARE\Mattermost\Desktop\settings" Name="MattermostDesktopShortcutStartMenu" Value="1" Type="integer" KeyPath="yes" />
-              <Shortcut Id="MattermostDesktopShortcutStartMenu" Directory="ProgramMenuDir" Name="Mattermost Desktop" WorkingDirectory="INSTALLDIR" Icon="Mattermost.ico" IconIndex="0" Advertise="no" Target="[INSTALLDIR]Mattermost.exe">
+              <Shortcut Id="MattermostDesktopShortcutStartMenu" Directory="ProgramMenuDir" Name="Mattermost" WorkingDirectory="INSTALLDIR" Icon="Mattermost.ico" IconIndex="0" Advertise="no" Target="[INSTALLDIR]Mattermost.exe">
                 <ShortcutProperty Key="System.AppUserModel.ID" Value="Mattermost.Desktop" />
                 <ShortcutProperty Key="System.AppUserModel.ToastActivatorCLSID" Value="{082F98DC-8BD8-4771-9D01-3A75930884D1}"></ShortcutProperty>
               </Shortcut>
@@ -90,7 +89,7 @@
         </Directory>
       </Directory>
       <Directory Id="ProgramMenuFolder" Name="Programs">
-        <Directory Id="ProgramMenuDir" Name="Mattermost Desktop">
+        <Directory Id="ProgramMenuDir" Name="Mattermost">
           <Component Id="ProgramMenuDir" Guid="CA5C6FAF-C004-4909-AF1C-AA0A5F53C245">
             <RemoveFolder Id="ProgramMenuDir" On="uninstall" />
             <RegistryValue Root="HKCU" Key="Software\Mattermost\Desktop" Type="string" Value="" KeyPath="yes" />
@@ -127,7 +126,6 @@
     <InstallExecuteSequence>
       <Custom Action="KillApp" Before="InstallValidate" />
       <Custom Action="LaunchApp" After="InstallFinalize">Installed</Custom>
-      <RemoveExistingProducts After="InstallFinalize" />
     </InstallExecuteSequence>
     <CustomAction Id="LaunchApp" FileKey="MattermostDesktopEXE" ExeCommand="" Return="asyncNoWait" />
     <CustomAction Id="KillApp" Directory="INSTALLDIR" Return="ignore" ExeCommand="&quot;[SystemFolder]taskkill.exe&quot; /F /IM &quot;Mattermost.exe&quot;" />
@@ -136,7 +134,10 @@
     <Property Id="ARPCONTACT">https://pre-release.mattermost.com</Property>
     <Property Id="ARPHELPLINK">https://docs.mattermost.com/</Property>
     <Property Id="ARPURLINFOABOUT">https://mattermost.com/</Property>
-    <Property Id="ComponentDownload"><![CDATA[https://releases.mattermost.com/desktop/4.1.2/mattermost-setup-4.1.2-win64.msi]]></Property>
+    <!--
+      Next line will be added by `Makefile.ps1`, leaving it here for reference, as it will be added before constructing the MSI
+      <Property Id="ComponentDownload">https://releases.mattermost.com/desktop/0.0.0/mattermost-desktop-0.0.0-$(var.Platform).msi</Property> 
+    -->
     <Property Id="ADDDESKTOPSHORTCUT">true</Property>
     <Property Id="ADDSTARTMENUSHORTCUT">true</Property>
     <UI>

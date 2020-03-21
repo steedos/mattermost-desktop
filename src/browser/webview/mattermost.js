@@ -51,6 +51,15 @@ window.addEventListener('load', () => {
   });
 });
 
+// Sent for drag and drop tabs to work properly
+document.addEventListener('mousemove', (event) => {
+  ipcRenderer.sendToHost('mouse-move', {clientX: event.clientX, clientY: event.clientY});
+});
+
+document.addEventListener('mouseup', () => {
+  ipcRenderer.sendToHost('mouse-up');
+});
+
 // listen for messages from the webapp
 window.addEventListener('message', ({origin, data: {type, message = {}} = {}} = {}) => {
   if (origin !== window.location.origin) {
@@ -242,6 +251,13 @@ ipcRenderer.on('set-spellchecker', setSpellChecker);
 // push user activity updates to the webapp
 ipcRenderer.on('user-activity-update', (event, {userIsActive, isSystemEvent}) => {
   window.postMessage({type: 'user-activity-update', message: {userIsActive, manual: isSystemEvent}}, window.location.origin);
+});
+
+// exit fullscreen embedded elements like youtube - https://mattermost.atlassian.net/browse/MM-19226
+ipcRenderer.on('exit-fullscreen', () => {
+  if (document.fullscreenElement && document.fullscreenElement.nodeName.toLowerCase() === 'iframe') {
+    document.exitFullscreen();
+  }
 });
 
 // mattermost-webapp is SPA. So cache is not cleared due to no navigation.

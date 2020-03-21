@@ -30,6 +30,7 @@ function getSpellCheckerLocaleMenus(onSelectSpellCheckerLocale) {
     {language: 'Spanish (ES)', locale: 'es-ES'},
     {language: 'Spanish (MX)', locale: 'es-MX'},
     {language: 'Dutch', locale: 'nl-NL'},
+    {language: 'Italian', locale: 'it-IT'},
   ];
   return locales.map((l) => ({
     label: l.language,
@@ -52,7 +53,7 @@ export default {
     const actualOptions = Object.assign({}, defaultOptions, options);
     electronContextMenu({
       window: win,
-      prepend(params) {
+      prepend(_defaultActions, params) {
         if (actualOptions.useSpellChecker) {
           const prependMenuItems = [];
           if (params.isEditable && params.misspelledWord !== '') {

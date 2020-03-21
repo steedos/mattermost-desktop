@@ -81,100 +81,135 @@ function createTemplate(mainWindow, config, isDev) {
   template.push({
     label: '编辑',
     submenu: [{
-      role: 'undo',
       label: '撤销',
+      accelerator: 'CmdOrCtrl+Z',
+      click() {
+        mainWindow.webContents.send('undo');
+      },
     }, {
-      role: 'redo',
       label: '重做',
+      accelerator: 'CmdOrCtrl+SHIFT+Z',
+      click() {
+        mainWindow.webContents.send('redo');
+      },
     }, separatorItem, {
-      role: 'cut',
       label: '剪切',
+      accelerator: 'CmdOrCtrl+X',
+      click() {
+        mainWindow.webContents.send('cut');
+      },
     }, {
-      role: 'copy',
       label: '复制',
+      accelerator: 'CmdOrCtrl+C',
+      click() {
+        mainWindow.webContents.send('copy');
+      },
     }, {
-      role: 'paste',
       label: '粘贴',
+      accelerator: 'CmdOrCtrl+V',
+      click() {
+        mainWindow.webContents.send('paste');
+      },
     }, {
-      role: 'selectall',
-      label: '全部选中',
+      label: '粘贴和匹配样式',
+      accelerator: 'CmdOrCtrl+SHIFT+V',
+      visible: process.platform === 'darwin',
+      click() {
+        mainWindow.webContents.send('paste-and-match');
+      },
+    }, {
+      role: '全选',
+      accelerator: 'CmdOrCtrl+A',
     }],
   });
+
+  const viewSubMenu = [/*{
+    label: 'Find..',
+    accelerator: 'CmdOrCtrl+F',
+    click(item, focusedWindow) {
+      focusedWindow.webContents.send('toggle-find');
+    },
+  },*/{
+    label: '重新载入',
+    accelerator: 'CmdOrCtrl+R',
+    click(item, focusedWindow) {
+      if (focusedWindow) {
+        if (focusedWindow === mainWindow) {
+          mainWindow.webContents.send('reload-tab');
+        } else {
+          focusedWindow.reload();
+        }
+      }
+    },
+  }, {
+    label: '清空缓存并重新载入',
+    accelerator: 'Shift+CmdOrCtrl+R',
+    click(item, focusedWindow) {
+      if (focusedWindow) {
+        if (focusedWindow === mainWindow) {
+          mainWindow.webContents.send('clear-cache-and-reload-tab');
+        } else {
+          focusedWindow.webContents.session.clearCache(() => {
+            focusedWindow.reload();
+          });
+        }
+      }
+    },
+  }, {
+    role: 'togglefullscreen',
+    label: '切换全屏幕',
+    accelerator: process.platform === 'darwin' ? 'Ctrl+Cmd+F' : 'F11',
+  }, separatorItem, {
+    label: '实际大小',
+    accelerator: 'CmdOrCtrl+0',
+    click() {
+      mainWindow.webContents.send('zoom-reset');
+    },
+  }, {
+    label: '放大',
+    accelerator: 'CmdOrCtrl+SHIFT+=',
+    click() {
+      mainWindow.webContents.send('zoom-in');
+    },
+  }, {
+    label: '缩小',
+    accelerator: 'CmdOrCtrl+-',
+    click() {
+      mainWindow.webContents.send('zoom-out');
+    },
+  }, separatorItem, {
+    label: '开发工具（桌面客户端）',
+    accelerator: (() => {
+      if (process.platform === 'darwin') {
+        return 'Alt+Command+I';
+      }
+      return 'Ctrl+Shift+I';
+    })(),
+    click(item, focusedWindow) {
+      if (focusedWindow) {
+        focusedWindow.toggleDevTools();
+      }
+    },
+  }, {
+    label: '开发工具（当前服务器）',
+    click() {
+      mainWindow.webContents.send('open-devtool');
+    },
+  }];
+
+  if (process.platform !== 'darwin') {
+    viewSubMenu.push(separatorItem);
+    viewSubMenu.push({
+      label: '切换暗模式',
+      click() {
+        mainWindow.webContents.send('set-dark-mode');
+      },
+    });
+  }
+
   template.push({
     label: '查看',
-    submenu: [/*{
-      label: '查找..',
-      accelerator: 'CmdOrCtrl+F',
-      click(item, focusedWindow) {
-        focusedWindow.webContents.send('toggle-find');
-      },
-    }, */{
-      label: '重新载入',
-      accelerator: 'CmdOrCtrl+R',
-      click(item, focusedWindow) {
-        if (focusedWindow) {
-          if (focusedWindow === mainWindow) {
-            mainWindow.webContents.send('reload-tab');
-          } else {
-            focusedWindow.reload();
-          }
-        }
-      },
-    }, {
-      role: 'togglefullscreen',
-      label: '切换全屏幕',
-    }, separatorItem, {
-      role: 'resetzoom',
-      label: '实际大小',
-    }, {
-      label: '放大',
-      role: 'zoomin',
-    }, {
-      label: '放大 (隐藏)',
-      accelerator: 'CmdOrCtrl+=',
-      visible: false,
-      role: 'zoomin',
-    }, {
-      label: '缩小',
-      role: 'zoomout',
-    }, {
-      label: '缩小 (隐藏)',
-      accelerator: 'CmdOrCtrl+Shift+-',
-      visible: false,
-      role: 'zoomout',
-    }, separatorItem, {
-      label: '开发工具（桌面客户端）',
-      accelerator: (() => {
-        if (process.platform === 'darwin') {
-          return 'Alt+Command+I';
-        }
-        return 'Ctrl+Shift+I';
-      })(),
-      click(item, focusedWindow) {
-        if (focusedWindow) {
-          focusedWindow.toggleDevTools();
-        }
-      },
-    }, {
-      label: '开发工具（当前服务器）',
-      click() {
-        mainWindow.webContents.send('open-devtool');
-      },
-    }, {
-      label: '清空缓存并重新载入',
-      accelerator: 'Shift+CmdOrCtrl+R',
-      click(item, focusedWindow) {
-        if (focusedWindow) {
-          if (focusedWindow === mainWindow) {
-            mainWindow.webContents.send('clear-cache-and-reload-tab');
-          } else {
-            focusedWindow.webContents.session.clearCache(() => {
-              focusedWindow.reload();
-            });
-          }
-        }
-      },
-    }],
+    submenu: viewSubMenu,
   });
   template.push({
     label: '历史记录',
@@ -213,7 +248,8 @@ function createTemplate(mainWindow, config, isDev) {
     }, {
       role: 'close',
       label: '关闭',
-    }, separatorItem, ...teams.slice(0, 9).map((team, i) => {
+      accelerator: 'CmdOrCtrl+W',
+    }, separatorItem, ...teams.slice(0, 9).sort((teamA, teamB) => teamA.order - teamB.order).map((team, i) => {
       return {
         label: team.name,
         accelerator: `CmdOrCtrl+${i + 1}`,

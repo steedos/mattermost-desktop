@@ -3,12 +3,12 @@
 // See LICENSE.txt for license information.
 import os from 'os';
 import path from 'path';
-
-import {URL} from 'url';
+import fs from 'fs';
 
 import electron from 'electron';
 import isDev from 'electron-is-dev';
 import installExtension, {REACT_DEVELOPER_TOOLS} from 'electron-devtools-installer';
+import log from 'electron-log';
 
 import {protocols} from '../electron-builder.json';
 
@@ -43,15 +43,19 @@ const {
   dialog,
   systemPreferences,
   session,
+  BrowserWindow,
 } = electron;
 const criticalErrorHandler = new CriticalErrorHandler();
 const assetsDir = path.resolve(app.getAppPath(), 'assets');
 const loginCallbackMap = new Map();
+const certificateRequests = new Map();
 const userActivityMonitor = new UserActivityMonitor();
+const certificateErrorCallbacks = new Map();
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow = null;
+let popupWindow = null;
 let hideOnStartup = null;
 let certificateStore = null;
 let spellChecker = null;
@@ -62,6 +66,7 @@ let registryConfig = null;
 let config = null;
 let trayIcon = null;
 let trayImages = null;
+let altLastPressed = false;
 
 // supported custom login paths (oath, saml)
 const customLoginRegexPaths = [
@@ -85,7 +90,6 @@ const customLogins = {};
  */
 async function initialize() {
   process.on('uncaughtException', criticalErrorHandler.processUncaughtExceptionHandler.bind(criticalErrorHandler));
-
   global.willAppQuit = false;
 
   // initialization that can run before the app is ready
@@ -154,6 +158,7 @@ function initializeAppEventListeners() {
   app.on('activate', handleAppActivate);
   app.on('before-quit', handleAppBeforeQuit);
   app.on('certificate-error', handleAppCertificateError);
+  app.on('select-client-certificate', handleSelectCertificate);
   app.on('gpu-process-crashed', handleAppGPUProcessCrashed);
   app.on('login', handleAppLogin);
   app.on('will-finish-launching', handleAppWillFinishLaunching);
@@ -162,6 +167,13 @@ function initializeAppEventListeners() {
 
 function initializeBeforeAppReady() {
   certificateStore = CertificateStore.load(path.resolve(app.getPath('userData'), 'certificate.json'));
+
+  // prevent using a different working directory, which happens on windows running after installation.
+  const expectedPath = path.dirname(process.execPath);
+  if (process.cwd() !== expectedPath && !isDev) {
+    console.warn(`Current working directory is ${process.cwd()}, changing into ${expectedPath}`);
+    process.chdir(expectedPath);
+  }
 
   // can only call this before the app is ready
   if (config.enableHardwareAcceleration === false) {
@@ -203,8 +215,13 @@ function initializeInterCommunicationEventListeners() {
   ipcMain.on('get-spelling-suggestions', handleGetSpellingSuggestionsEvent);
   ipcMain.on('get-spellchecker-locale', handleGetSpellcheckerLocaleEvent);
   ipcMain.on('reply-on-spellchecker-is-ready', handleReplyOnSpellcheckerIsReadyEvent);
+  ipcMain.on('selected-client-certificate', handleSelectedCertificate);
+
   if (shouldShowTrayIcon()) {
     ipcMain.on('update-unread', handleUpdateUnreadEvent);
+  }
+  if (process.platform !== 'darwin') {
+    ipcMain.on('open-app-menu', handleOpenAppMenu);
   }
 }
 
@@ -293,46 +310,92 @@ function handleAppBeforeQuit() {
   global.willAppQuit = true;
 }
 
+function handleSelectCertificate(event, webContents, url, list, callback) {
+  event.preventDefault(); // prevent the app from getting the first certificate available
+  // store callback so it can be called with selected certificate
+  certificateRequests.set(url, callback);
+
+  // open modal for selecting certificate
+  mainWindow.webContents.send('select-user-certificate', url, list);
+}
+
+function handleSelectedCertificate(event, server, cert) {
+  const callback = certificateRequests.get(server);
+  if (!callback) {
+    console.error(`there was no callback associated with: ${server}`);
+    return;
+  }
+  if (typeof cert === 'undefined') {
+    console.log('user canceled certificate selection');
+  } else {
+    try {
+      callback(cert);
+    } catch (e) {
+      console.log(`There was a problem using the selected certificate: ${e}`);
+    }
+  }
+}
+
 function handleAppCertificateError(event, webContents, url, error, certificate, callback) {
-  if (certificateStore.isTrusted(url, certificate)) {
+  const parsedURL = new URL(url);
+  if (!parsedURL) {
+    return;
+  }
+  const origin = parsedURL.origin;
+  if (certificateStore.isTrusted(origin, certificate)) {
     event.preventDefault();
     callback(true);
   } else {
-    let detail = `URL: ${url}\nError: ${error}`;
-    if (certificateStore.isExisting(url)) {
-      detail = 'Certificate is different from previous one.\n\n' + detail;
+    // update the callback
+    const errorID = `${origin}:${error}`;
+
+    // if we are already showing that error, don't add more dialogs
+    if (certificateErrorCallbacks.has(errorID)) {
+      console.log(`Ignoring already shown dialog for ${errorID}`);
+      certificateErrorCallbacks.set(errorID, callback);
+      return;
     }
+    const extraDetail = certificateStore.isExisting(origin) ? 'Certificate is different from previous one.\n\n' : '';
+    const detail = `${extraDetail}origin: ${origin}\nError: ${error}`;
+
+    certificateErrorCallbacks.set(errorID, callback);
     dialog.showMessageBox(mainWindow, {
       title: 'Certificate Error',
       message: 'There is a configuration issue with this Mattermost server, or someone is trying to intercept your connection. You also may need to sign into the Wi-Fi you are connected to using your web browser.',
       type: 'error',
-      buttons: [
-        'More Details',
-        'Cancel Connection',
-      ],
+      detail,
+      buttons: ['More Details', 'Cancel Connection'],
       cancelId: 1,
-    }, (response) => {
-      if (response === 0) {
-        dialog.showMessageBox(mainWindow, {
-          title: 'Certificate Error',
-          message: `Certificate from "${certificate.issuerName}" is not trusted.`,
-          detail,
-          type: 'error',
-          buttons: [
-            'Trust Insecure Certificate',
-            'Cancel Connection',
-          ],
-          cancelId: 1,
-        }, (responseTwo) => { //eslint-disable-line max-nested-callbacks
-          if (responseTwo === 0) {
-            certificateStore.add(url, certificate);
-            certificateStore.save();
-            webContents.loadURL(url);
-          }
-        });
-      }
-    });
-    callback(false);
+    }).then(
+      ({response}) => {
+        if (response === 0) {
+          return dialog.showMessageBox(mainWindow, {
+            title: 'Certificate Not Trusted',
+            message: `Certificate from "${certificate.issuerName}" is not trusted.`,
+            detail: extraDetail,
+            type: 'error',
+            buttons: ['Trust Insecure Certificate', 'Cancel Connection'],
+            cancelId: 1,
+          });
+        }
+        return {response};
+      }).then(
+      ({response: responseTwo}) => {
+        if (responseTwo === 0) {
+          certificateStore.add(origin, certificate);
+          certificateStore.save();
+          certificateErrorCallbacks.get(errorID)(true);
+          certificateErrorCallbacks.delete(errorID);
+          webContents.loadURL(url);
+        } else {
+          certificateErrorCallbacks.get(errorID)(false);
+          certificateErrorCallbacks.delete(errorID);
+        }
+      }).catch(
+      (dialogError) => {
+        log.error(`There was an error with the Certificate Error dialog: ${dialogError}`);
+        certificateErrorCallbacks.delete(errorID);
+      });
   }
 }
 
@@ -342,6 +405,9 @@ function handleAppGPUProcessCrashed(event, killed) {
 
 function handleAppLogin(event, webContents, request, authInfo, callback) {
   event.preventDefault();
+  if (!isTrustedURL(request.url)) {
+    return;
+  }
   loginCallbackMap.set(JSON.stringify(request), callback);
   mainWindow.webContents.send('login-request', request, authInfo);
 }
@@ -380,15 +446,24 @@ function handleAppWebContentsCreated(dc, contents) {
 
   contents.on('will-navigate', (event, url) => {
     const contentID = event.sender.id;
-    const parsedURL = parseURL(url);
+    const parsedURL = Utils.parseURL(url);
+    const server = Utils.getServer(parsedURL, config.teams);
 
-    if (isTrustedURL(parsedURL)) {
+    if ((server !== null && Utils.isTeamUrl(server.url, parsedURL)) || isTrustedPopupWindow(event.sender)) {
+      return;
+    }
+
+    if (isCustomLoginURL(parsedURL, server)) {
+      return;
+    }
+    if (parsedURL.protocol === 'mailto:') {
       return;
     }
     if (customLogins[contentID].inProgress) {
       return;
     }
 
+    log.info(`Prevented desktop from navigating to: ${url}`);
     event.preventDefault();
   });
 
@@ -399,13 +474,14 @@ function handleAppWebContentsCreated(dc, contents) {
   //    - indicate custom login is NOT in progress
   contents.on('did-start-navigation', (event, url) => {
     const contentID = event.sender.id;
-    const parsedURL = parseURL(url);
+    const parsedURL = Utils.parseURL(url);
+    const server = Utils.getServer(parsedURL, config.teams);
 
     if (!isTrustedURL(parsedURL)) {
       return;
     }
 
-    if (isCustomLoginURL(parsedURL)) {
+    if (isCustomLoginURL(parsedURL, server)) {
       customLogins[contentID].inProgress = true;
     } else if (customLogins[contentID].inProgress) {
       customLogins[contentID].inProgress = false;
@@ -413,7 +489,116 @@ function handleAppWebContentsCreated(dc, contents) {
   });
 
   contents.on('new-window', (event, url) => {
-    if (isTrustedURL(url)) {
+    event.preventDefault();
+
+    const parsedURL = Utils.parseURL(url);
+    const server = Utils.getServer(parsedURL, config.teams);
+
+    if (!server) {
+      log.info(`Untrusted popup window blocked: ${url}`);
+      return;
+    }
+    if (Utils.isTeamUrl(server.url, parsedURL, true) === true) {
+      log.info(`${url} is a known team, preventing to open a new window`);
+      return;
+    }
+    if (popupWindow && !popupWindow.closed && popupWindow.getURL() === url) {
+      log.info(`Popup window already open at provided url: ${url}`);
+      return;
+    }
+    if (Utils.isPluginUrl(server.url, parsedURL)) {
+      if (!popupWindow || popupWindow.closed) {
+        popupWindow = new BrowserWindow({
+          backgroundColor: '#fff', // prevents blurry text: https://electronjs.org/docs/faq#the-font-looks-blurry-what-is-this-and-what-can-i-do
+          parent: mainWindow,
+          show: false,
+          webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+          },
+        });
+        popupWindow.once('ready-to-show', () => {
+          popupWindow.show();
+        });
+        popupWindow.once('closed', () => {
+          popupWindow = null;
+        });
+      }
+      popupWindow.loadURL(url);
+    }
+  });
+
+  // implemented to temporarily help solve for https://community-daily.mattermost.com/core/pl/b95bi44r4bbnueqzjjxsi46qiw
+  contents.on('before-input-event', (event, input) => {
+    if (input.key === 'Alt' && input.type === 'keyUp' && altLastPressed) {
+      altLastPressed = false;
+      mainWindow.webContents.send('focus-three-dot-menu');
+      return;
+    }
+
+    // Hack to detect keyPress so that alt+<key> combinations don't default back to the 3-dot menu
+    if (input.key === 'Alt' && input.type === 'keyDown') {
+      altLastPressed = true;
+    } else {
+      altLastPressed = false;
+    }
+
+    if (!input.shift && !input.control && !input.alt && !input.meta) {
+      // hacky fix for https://mattermost.atlassian.net/browse/MM-19226
+      if ((input.key === 'Escape' || input.key === 'f') && input.type === 'keyDown') {
+        // only do this when in fullscreen on a mac
+        if (mainWindow.isFullScreen() && process.platform === 'darwin') {
+          mainWindow.webContents.send('exit-fullscreen');
+        }
+      }
+      return;
+    }
+
+    if ((process.platform === 'darwin' && !input.meta) || (process.platform !== 'darwin' && !input.control)) {
+      return;
+    }
+
+    // handle certain keyboard shortcuts manually
+    switch (input.key) { // eslint-disable-line padded-blocks
+
+    // Manually handle zoom-in/out/reset keyboard shortcuts
+    // - temporary fix for https://mattermost.atlassian.net/browse/MM-19031 and https://mattermost.atlassian.net/browse/MM-19032
+    case '-':
+      mainWindow.webContents.send('zoom-out');
+      break;
+    case '=':
+      mainWindow.webContents.send('zoom-in');
+      break;
+    case '0':
+      mainWindow.webContents.send('zoom-reset');
+      break;
+
+    // Manually handle undo/redo keyboard shortcuts
+    // - temporary fix for https://mattermost.atlassian.net/browse/MM-19198
+    case 'z':
+      if (input.shift) {
+        mainWindow.webContents.send('redo');
+      } else {
+        mainWindow.webContents.send('undo');
+      }
+      break;
+
+    // Manually handle copy/cut/paste keyboard shortcuts
+    case 'c':
+      mainWindow.webContents.send('copy');
+      break;
+    case 'x':
+      mainWindow.webContents.send('cut');
+      break;
+    case 'v':
+      if (input.shift) {
+        mainWindow.webContents.send('paste-and-match');
+      } else {
+        mainWindow.webContents.send('paste');
+      }
+      break;
+    default:
+      // allows the input event to proceed if not handled by a case above
       return;
     }
     event.preventDefault();
@@ -440,6 +625,20 @@ function initializeAfterAppReady() {
       catch((err) => console.log('An error occurred: ', err));
   }
 
+  // Workaround for MM-22193
+  // From this post: https://github.com/electron/electron/issues/19468#issuecomment-549593139
+  // Electron 6 has a bug that affects users on Windows 10 using dark mode, causing the app to hang
+  // This workaround deletes a file that stops that from happening
+  if (process.platform === 'win32') {
+    const appUserDataPath = app.getPath('userData');
+    const devToolsExtensionsPath = path.join(appUserDataPath, 'DevTools Extensions');
+    try {
+      fs.unlinkSync(devToolsExtensionsPath);
+    } catch (_) {
+      // don't complain if the file doesn't exist
+    }
+  }
+
   // Protocol handler for win32
   if (process.platform === 'win32') {
     const args = process.argv.slice(1);
@@ -452,6 +651,7 @@ function initializeAfterAppReady() {
 
   mainWindow = createMainWindow(config.data, {
     hideOnStartup,
+    trayIconShown: process.platform === 'win32' || config.showTrayIcon,
     linuxAppIcon: path.join(assetsDir, 'appicon.png'),
     deeplinkingUrl,
   });
@@ -517,21 +717,28 @@ function initializeAfterAppReady() {
     });
   }
 
-  if (process.platform === 'darwin') {
-    session.defaultSession.on('will-download', (event, item) => {
-      const filename = item.getFilename();
-      const savePath = dialog.showSaveDialog({
-        title: filename,
-        defaultPath: os.homedir() + '/Downloads/' + filename,
+  session.defaultSession.on('will-download', (event, item) => {
+    const filename = item.getFilename();
+    const fileElements = filename.split('.');
+    const filters = [];
+    if (fileElements.length > 1) {
+      filters.push({
+        name: `${fileElements[fileElements.length - 1]} files`,
+        extensions: [fileElements[fileElements.length - 1]],
       });
+    }
 
-      if (savePath) {
-        item.setSavePath(savePath);
-      } else {
-        item.cancel();
-      }
+    // add default filter
+    filters.push({
+      name: 'All files',
+      extensions: ['*'],
     });
-  }
+    item.setSaveDialogOptions({
+      title: filename,
+      defaultPath: os.homedir() + '/Downloads/' + filename,
+      filters,
+    });
+  });
 
   ipcMain.emit('update-menu', true, config.data);
 
@@ -564,12 +771,8 @@ function initializeAfterAppReady() {
     // get the requesting webContents url
     const requestingURL = webContents.getURL();
 
-    // is the target url trusted?
-    const matchingTeamIndex = config.teams.findIndex((team) => {
-      return requestingURL.startsWith(team.url);
-    });
-
-    callback(matchingTeamIndex >= 0);
+    // is the requesting url trusted?
+    callback(isTrustedURL(requestingURL));
   });
 }
 
@@ -650,9 +853,21 @@ function handleUpdateUnreadEvent(event, arg) {
   }
 }
 
+function handleOpenAppMenu() {
+  Menu.getApplicationMenu().popup({
+    x: 18,
+    y: 18,
+  });
+}
+
+function handleCloseAppMenu(event) {
+  mainWindow.webContents.send('focus-on-webview', event);
+}
+
 function handleUpdateMenuEvent(event, configData) {
   const aMenu = appMenu.createMenu(mainWindow, configData, global.isDev);
   Menu.setApplicationMenu(aMenu);
+  aMenu.addListener('menu-will-close', handleCloseAppMenu);
 
   // set up context menu for tray icon
   if (shouldShowTrayIcon()) {
@@ -672,16 +887,22 @@ function handleUpdateMenuEvent(event, configData) {
   }
 }
 
-function handleUpdateDictionaryEvent() {
+// localeSelected might be null, if that's the case, use config's locale
+function handleUpdateDictionaryEvent(_, localeSelected) {
   if (config.useSpellChecker) {
-    spellChecker = new SpellChecker(
-      config.spellCheckerLocale,
-      path.resolve(app.getAppPath(), 'node_modules/simple-spellchecker/dict'),
-      (err) => {
-        if (err) {
-          console.error(err);
-        }
-      });
+    const locale = localeSelected || config.spellCheckerLocale;
+    try {
+      spellChecker = new SpellChecker(
+        locale,
+        path.resolve(app.getAppPath(), 'node_modules/simple-spellchecker/dict'),
+        (err) => {
+          if (err) {
+            console.error(err);
+          }
+        });
+    } catch (e) {
+      console.error('couldn\'t load a spellchecker for locale');
+    }
   }
 }
 
@@ -738,42 +959,28 @@ function handleMainWindowWebContentsCrashed() {
 // helper functions
 //
 
-function parseURL(url) {
-  if (!url) {
-    return null;
-  }
-  if (url instanceof URL) {
-    return url;
-  }
-  try {
-    return new URL(url);
-  } catch (e) {
-    return null;
-  }
-}
-
 function isTrustedURL(url) {
-  const parsedURL = parseURL(url);
+  const parsedURL = Utils.parseURL(url);
   if (!parsedURL) {
+    console.log('not an url');
     return false;
   }
-  const teamURLs = config.teams.reduce((urls, team) => {
-    const parsedTeamURL = parseURL(team.url);
-    if (parsedTeamURL) {
-      return urls.concat(parsedTeamURL);
-    }
-    return urls;
-  }, []);
-  for (const teamURL of teamURLs) {
-    if (parsedURL.origin === teamURL.origin) {
-      return true;
-    }
-  }
-  return false;
+  return Utils.getServer(parsedURL, config.teams) !== null;
 }
 
-function isCustomLoginURL(url) {
-  const parsedURL = parseURL(url);
+function isTrustedPopupWindow(webContents) {
+  if (!webContents) {
+    return false;
+  }
+  if (!popupWindow) {
+    return false;
+  }
+  return BrowserWindow.fromWebContents(webContents) === popupWindow;
+}
+
+function isCustomLoginURL(url, server) {
+  const subpath = (server === null || typeof server === 'undefined') ? '' : server.url.pathname;
+  const parsedURL = Utils.parseURL(url);
   if (!parsedURL) {
     return false;
   }
@@ -781,6 +988,17 @@ function isCustomLoginURL(url) {
     return false;
   }
   const urlPath = parsedURL.pathname;
+  if ((subpath !== '' || subpath !== '/') && urlPath.startsWith(subpath)) {
+    const replacement = subpath.endsWith('/') ? '/' : '';
+    const replacedPath = urlPath.replace(subpath, replacement);
+    for (const regexPath of customLoginRegexPaths) {
+      if (replacedPath.match(regexPath)) {
+        return true;
+      }
+    }
+  }
+
+  // if there is no subpath, or we are adding the team and got redirected to the real server it'll be caught here
   for (const regexPath of customLoginRegexPaths) {
     if (urlPath.match(regexPath)) {
       return true;
@@ -887,23 +1105,22 @@ function clearAppCache() {
   }
 }
 
-function getValidWindowPosition(state, screen) {
+function isWithinDisplay(state, display) {
+  // given a display, check if window is within it
+  return (state.x > display.maxX || state.y > display.maxY || state.x < display.minX || state.y < display.minY);
+}
+
+function getValidWindowPosition(state) {
   // Check if the previous position is out of the viewable area
   // (e.g. because the screen has been plugged off)
-  const displays = screen.getAllDisplays();
-  let minX = 0;
-  let maxX = 0;
-  let minY = 0;
-  let maxY = 0;
-  for (let i = 0; i < displays.length; i++) {
-    const display = displays[i];
-    maxX = Math.max(maxX, display.bounds.x + display.bounds.width);
-    maxY = Math.max(maxY, display.bounds.y + display.bounds.height);
-    minX = Math.min(minX, display.bounds.x);
-    minY = Math.min(minY, display.bounds.y);
-  }
+  const boundaries = Utils.getDisplayBoundaries();
+  const isDisplayed = boundaries.reduce(
+    (prev, display) => {
+      return prev || isWithinDisplay(state, display);
+    },
+    false);
 
-  if (state.x > maxX || state.y > maxY || state.x < minX || state.y < minY) {
+  if (isDisplayed) {
     Reflect.deleteProperty(state, 'x');
     Reflect.deleteProperty(state, 'y');
     Reflect.deleteProperty(state, 'width');
@@ -922,7 +1139,7 @@ function resizeScreen(screen, browserWindow) {
       y: position[1],
       width: size[0],
       height: size[1],
-    }, screen);
+    });
     browserWindow.setPosition(validPosition.x || 0, validPosition.y || 0);
   }
 

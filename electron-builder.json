@@ -12,7 +12,7 @@
   },
   "files": [
     "main_bundle.js",
-    "browser/**/*{.html,.css,_bundle.js}",
+    "browser/**/*{.html,.css,_bundle.js,.svg,.png}",
     "assets/**/*",
     "node_modules/bootstrap/dist/**",
     "node_modules/simple-spellchecker/dict/*.dic"
@@ -23,6 +23,8 @@
       "schemes": ["steedos"]
     }
   ],
+  "afterPack": "scripts/afterpack.js",
+  "afterSign": "scripts/notarize.js",
   "deb": {
     "synopsis": "Steedos"
   },
@@ -65,12 +67,25 @@
         ]
       }
     ],
-    "hardenedRuntime": true
+    "hardenedRuntime": true,
+    "gatekeeperAssess": true
   },
   "dmg": {
     "background": "resources/osx/DMG_BG.png",
-    "iconSize": 140,
-    "iconTextSize": 18
+    "contents": [
+      {
+        "x": 152,
+        "y": 201
+      },
+      {
+        "x": 445,
+        "y": 201,
+        "type": "link",
+        "path": "/Applications"
+      }
+    ],
+    "iconSize": 110,
+    "iconTextSize": 13
   },
   "squirrelWindows": {
     "iconUrl": "file://resources/icon.ico",
@@ -91,16 +106,16 @@
       }
     ],
     "signingHashAlgorithms": ["sha1", "sha256"],
-    "certificateSubjectName": "ÉÏº£»ªÑ×Èí¼þ¿Æ¼¼ÓÐÏÞ¹«Ë¾",
+    "certificateSubjectName": "ï¿½Ïºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¼ï¿½ï¿½ï¿½ï¿½Þ¹ï¿½Ë¾",
     "timeStampServer": "http://timestamp.digicert.com",
     "signDlls": false
   },
   "appx": {
     "applicationId": "com.steedos.messenger.desktop",
-    "displayName": "»ªÐÅ",
+    "displayName": "ï¿½ï¿½ï¿½ï¿½",
     "identityName": "951C92F6.2604342FC116E",
     "publisher": "CN=FB8D4C38-D9BA-43BF-A6C4-D2BF133AC2D1",
-    "publisherDisplayName": "»ªÑ×Èí¼þ",
+    "publisherDisplayName": "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½",
     "languages": "zh-CN",
     "addAutoLaunchExtension": true
   },

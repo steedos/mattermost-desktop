@@ -33,7 +33,7 @@ if (teams.length === 0) {
 }
 
 const parsedURL = url.parse(window.location.href, true);
-const initialIndex = parsedURL.query.index ? parseInt(parsedURL.query.index, 10) : 0;
+const initialIndex = parsedURL.query.index ? parseInt(parsedURL.query.index, 10) : getInitialIndex();
 
 let deeplinkingUrl = null;
 if (!parsedURL.query.index || parsedURL.query.index === null) {
@@ -52,6 +52,11 @@ ipcRenderer.on('reload-config', () => {
   config.reload();
 });
 
+function getInitialIndex() {
+  const element = teams.find((e) => e.order === 0);
+  return element ? teams.indexOf(element) : 0;
+}
+
 function showBadgeWindows(sessionExpired, unreadCount, mentionCount) {
   function sendBadge(dataURL, description) {
     // window.setOverlayIcon() does't work with NativeImage across remote boundaries.
@@ -69,7 +74,7 @@ function showBadgeWindows(sessionExpired, unreadCount, mentionCount) {
     const dataURL = createBadgeDataURL('•');
     sendBadge(dataURL, 'Session Expired: Please sign in to continue receiving notifications.');
   } else if (mentionCount > 0) {
-    const dataURL = createBadgeDataURL(mentionCount.toString());
+    const dataURL = createBadgeDataURL((mentionCount > 99) ? '99+' : mentionCount.toString(), mentionCount > 99);
     sendBadge(dataURL, 'You have unread mentions (' + mentionCount + ')');
   } else if (unreadCount > 0 && config.showUnreadBadge) {
     const dataURL = createBadgeDataURL('•');
@@ -127,17 +132,66 @@ function showBadge(sessionExpired, unreadCount, mentionCount) {
   }
 }
 
-function teamConfigChange(updatedTeams) {
+function teamConfigChange(updatedTeams, callback) {
   config.set('teams', updatedTeams);
+  if (callback) {
+    config.once('update', callback);
+  }
 }
 
 function handleSelectSpellCheckerLocale(locale) {
   config.set('spellCheckerLocale', locale);
+  ipcRenderer.send('update-dict', locale);
+}
+
+function moveTabs(originalOrder, newOrder) {
+  const tabOrder = teams.concat().map((team, index) => {
+    return {
+      index,
+      order: team.order,
+    };
+  }).sort((a, b) => (a.order - b.order));
+
+  const team = tabOrder.splice(originalOrder, 1);
+  tabOrder.splice(newOrder, 0, team[0]);
+
+  let teamIndex;
+  tabOrder.forEach((t, order) => {
+    if (order === newOrder) {
+      teamIndex = t.index;
+    }
+    teams[t.index].order = order;
+  });
+  teamConfigChange(teams);
+  return teamIndex;
+}
+
+function getDarkMode() {
+  if (process.platform !== 'darwin') {
+    return config.darkMode;
+  }
+  return null;
+}
+
+function setDarkMode() {
+  if (process.platform !== 'darwin') {
+    const darkMode = Boolean(config.darkMode);
+    config.set('darkMode', !darkMode);
+    return !darkMode;
+  }
+  return null;
+}
+
+function openMenu() {
+  if (process.platform !== 'darwin') {
+    ipcRenderer.send('open-app-menu');
+  }
 }
 
 ReactDOM.render(
   <MainPage
     teams={teams}
+    localTeams={config.localTeams}
     initialIndex={initialIndex}
     onBadgeChange={showBadge}
     onTeamConfigChange={teamConfigChange}
@@ -145,6 +199,10 @@ ReactDOM.render(
     onSelectSpellCheckerLocale={handleSelectSpellCheckerLocale}
     deeplinkingUrl={deeplinkingUrl}
     showAddServerButton={config.enableServerManagement}
+    getDarkMode={getDarkMode}
+    setDarkMode={setDarkMode}
+    moveTabs={moveTabs}
+    openMenu={openMenu}
   />,
   document.getElementById('content')
 );

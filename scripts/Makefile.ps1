@@ -184,51 +184,47 @@ function Run-BuildId {
     # candle.exe : error CNDL0001 : Value was either too large or too small for an Int32.
     # Exception Type: System.OverflowException
     # Add the revision only if we are not building a tag
-    
-    Print-Info "Checking build id tag..."    
-    if ($env:APPVEYOR_REPO_TAG -eq $true) {
-        $version = "$env:APPVEYOR_REPO_TAG_NAME"
-    } else {
-        $version = "$(git describe --tags $(git rev-list --tags --max-count=1))"
-    }
+
+    $version = "$(jq -r '.version' package.json)"
+    $winVersion = "$($version -Replace '-','.' -Replace '[^0-9.]')"
 
     Print-Info "Checking build id tag validity... [$version]"
     [version]$appVersion = New-Object -TypeName System.Version
-    [void][version]::TryParse($($version -Replace '-','.' -Replace '[^0-9.]'), [ref]$appVersion)
+    [void][version]::TryParse($winVersion, [ref]$appVersion)
     if (!($appVersion)) {
-        Print-Error "Non parsable tag detected. Fallbacking to version 0.0.0."
-        $version = "0.0.0"
+        # if we couldn't parse, it might be a -develop or something similar, so we just add a 
+        # number there that will change overtime. Most likely this is a PR to be tested
+        $revision = "$(git rev-list --all --count)"
+        $winVersion = "$($version -Replace '-.*').${revision}"
+        [void][version]::TryParse($winVersion, [ref]$appVersion)
+        if (!($appVersion)) {
+            Print-Error "Non parsable tag detected. Fallbacking to version 0.0.0."
+            $version = "0.0.0"
+        }
     }
 
     Print-Info -NoNewLine "Getting build id version..."
-    $env:COM_MATTERMOST_MAKEFILE_BUILD_ID = $version
+    $env:COM_MATTERMOST_MAKEFILE_BUILD_ID = "$version"
     Print " [$env:COM_MATTERMOST_MAKEFILE_BUILD_ID]"
 
     Print-Info -NoNewLine "Getting build id version for msi..."
-    $env:COM_MATTERMOST_MAKEFILE_BUILD_ID_MSI = ($version -Replace '-','.' -Replace '[^0-9.]').Split('.')[0..3] -Join '.'
+    $env:COM_MATTERMOST_MAKEFILE_BUILD_ID_MSI = $winVersion.Split('.')[0..3] -Join '.'
     Print " [$env:COM_MATTERMOST_MAKEFILE_BUILD_ID_MSI]"
 
     Print-Info -NoNewLine "Getting build id version for node/npm..."
-    $env:COM_MATTERMOST_MAKEFILE_BUILD_ID_NODE = ($version -Replace '^v').Split('.')[0..2] -Join '.'
+    $env:COM_MATTERMOST_MAKEFILE_BUILD_ID_NODE = $version
     Print " [$env:COM_MATTERMOST_MAKEFILE_BUILD_ID_NODE]"
 
     Print-Info "Patching version from msi xml descriptor..."
     $msiDescriptorFileName = "scripts\msi_installer.wxs"
     $msiDescriptor = [xml](Get-Content $msiDescriptorFileName)
     $msiDescriptor.Wix.Product.Version = [string]$env:COM_MATTERMOST_MAKEFILE_BUILD_ID_MSI
+    $ComponentDownload = $msiDescriptor.CreateElement("Property", "http://schemas.microsoft.com/wix/2006/wi")
+    $ComponentDownload.InnerText = "https://releases.mattermost.com/desktop/$version/mattermost-desktop-$version-`$(var.Platform).msi"
+    $ComponentDownload.SetAttribute("Id", "ComponentDownload")
+    $msiDescriptor.Wix.Product.AppendChild($ComponentDownload)
     $msiDescriptor.Save($msiDescriptorFileName)
-
-    Print-Info "Patching version from electron package.json..."
-    $packageFileName = "package.json"
-    $package = Get-Content $packageFileName -Raw | ConvertFrom-Json
-    $package.version = [string]$env:COM_MATTERMOST_MAKEFILE_BUILD_ID_NODE
-    $package | ConvertTo-Json | Set-Content $packageFileName
-
-    Print-Info "Patching version from electron src\package.json..."
-    $packageFileName = "src\package.json"
-    $package = Get-Content $packageFileName -Raw | ConvertFrom-Json
-    $package.version = [string]$env:COM_MATTERMOST_MAKEFILE_BUILD_ID_NODE
-    $package | ConvertTo-Json | Set-Content $packageFileName
+    Print-Info "Modified Wix XML"
 }
 
 function Run-BuildChangelog {
@@ -405,22 +401,22 @@ function Run-BuildMsi {
         # Dual signing is not supported on msi files. Is it recommended to sign with 256 hash.
         # src.: https://security.stackexchange.com/a/124685/84134
         # src.: https://social.msdn.microsoft.com/Forums/windowsdesktop/en-us/d4b70ecd-a883-4289-8047-cc9cde28b492#0b3e3b80-6b3b-463f-ac1e-1bf0dc831952
-        signtool.exe sign /f "resources\windows\certificate\mattermost-desktop-windows.pfx" /p "$env:COM_MATTERMOST_MAKEFILE_CERTIFICATE_PRIVATE_KEY_ENCRYPTED" /tr "http://timestamp.digicert.com" /fd sha256 /td sha256 "release\mattermost-desktop-$($env:COM_MATTERMOST_MAKEFILE_BUILD_ID)-x86.msi"
+        signtool.exe sign /f "resources\windows\certificate\mattermost-desktop-windows.pfx" /p "$env:COM_MATTERMOST_MAKEFILE_CERTIFICATE_PRIVATE_KEY_ENCRYPTED" /tr "http://timestamp.digicert.com" /fd sha256 /td sha256 "release\mattermost-desktop-$($env:COM_MATTERMOST_MAKEFILE_BUILD_ID)-x86.msi" /d "mattermost-desktop-$($env:COM_MATTERMOST_MAKEFILE_BUILD_ID)-x86.msi"
 
         Print-Info "Signing mattermost-desktop-$($env:COM_MATTERMOST_MAKEFILE_BUILD_ID)-x64.msi (waiting for 15 seconds)..."
         Start-Sleep -s 15
-        signtool.exe sign /f "resources\windows\certificate\mattermost-desktop-windows.pfx" /p "$env:COM_MATTERMOST_MAKEFILE_CERTIFICATE_PRIVATE_KEY_ENCRYPTED" /tr "http://timestamp.digicert.com" /fd sha256 /td sha256 "release\mattermost-desktop-$($env:COM_MATTERMOST_MAKEFILE_BUILD_ID)-x64.msi"
+        signtool.exe sign /f "resources\windows\certificate\mattermost-desktop-windows.pfx" /p "$env:COM_MATTERMOST_MAKEFILE_CERTIFICATE_PRIVATE_KEY_ENCRYPTED" /tr "http://timestamp.digicert.com" /fd sha256 /td sha256 "release\mattermost-desktop-\$($env:COM_MATTERMOST_MAKEFILE_BUILD_ID)-x64.msi" /d "mattermost-desktop-$($env:COM_MATTERMOST_MAKEFILE_BUILD_ID)-x64.msi"
     } elseif (Test-Path 'env:PFX') {
         Print-Info "Signing mattermost-desktop-$($env:COM_MATTERMOST_MAKEFILE_BUILD_ID)-x86.msi (waiting for 15 seconds)..."
         Start-Sleep -s 15
         # Dual signing is not supported on msi files. Is it recommended to sign with 256 hash.
         # src.: https://security.stackexchange.com/a/124685/84134
         # src.: https://social.msdn.microsoft.com/Forums/windowsdesktop/en-us/d4b70ecd-a883-4289-8047-cc9cde28b492#0b3e3b80-6b3b-463f-ac1e-1bf0dc831952
-        signtool.exe sign /f "./mattermost-desktop-windows.pfx" /p "$env:PFX_KEY" /tr "http://timestamp.digicert.com" /fd sha256 /td sha256 "release\mattermost-desktop-$($env:COM_MATTERMOST_MAKEFILE_BUILD_ID)-x86.msi"
+        signtool.exe sign /f "./mattermost-desktop-windows.pfx" /p "$env:PFX_KEY" /tr "http://timestamp.digicert.com" /fd sha256 /td sha256 "release\mattermost-desktop-$($env:COM_MATTERMOST_MAKEFILE_BUILD_ID)-x86.msi" /d "release\mattermost-desktop-$($env:COM_MATTERMOST_MAKEFILE_BUILD_ID)-x86.msi"
 
         Print-Info "Signing mattermost-desktop-$($env:COM_MATTERMOST_MAKEFILE_BUILD_ID)-x64.msi (waiting for 15 seconds)..."
         Start-Sleep -s 15
-        signtool.exe sign /f "./mattermost-desktop-windows.pfx" /p "$env:PFX_KEY" /tr "http://timestamp.digicert.com" /fd sha256 /td sha256 "release\mattermost-desktop-$($env:COM_MATTERMOST_MAKEFILE_BUILD_ID)-x64.msi"
+        signtool.exe sign /f "./mattermost-desktop-windows.pfx" /p "$env:PFX_KEY" /tr "http://timestamp.digicert.com" /fd sha256 /td sha256 "release\mattermost-desktop-$($env:COM_MATTERMOST_MAKEFILE_BUILD_ID)-x64.msi" /d "release\mattermost-desktop-$($env:COM_MATTERMOST_MAKEFILE_BUILD_ID)-x64.msi"
     } else {
         Print-Info "Not signing msi"
     }
@@ -439,7 +435,7 @@ function Get-Cert {
 }
 
 function Remove-Cert {
-    if (Test-Path $env:PFX) {
+    if (Test-Path 'env:PFX') {
         Print-Info "Removing windows certificate"
         Remove-Item -path "./mattermost-desktop-windows.pfx"
     }
@@ -448,10 +444,10 @@ function Remove-Cert {
 function Run-Build {
     Check-Deps -Verbose -Throwable
     Prepare-Path
+    Get-Cert
     Run-BuildId
     Run-BuildChangelog
     Run-BuildElectron
-    Get-Cert
     Run-BuildForceSignature
     Run-BuildLicense
     Run-BuildMsi
@@ -497,6 +493,12 @@ function Main {
             }
             "debug" {
                 Enable-AppVeyorRDP
+            }
+            "install-cert" {
+                Get-Cert
+            }
+            "remove-cert" {
+                Remove-Cert
             }
             default {
                 Print-Error "Makefile argument ""$_"" is invalid. Build process aborted."

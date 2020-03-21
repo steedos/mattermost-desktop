@@ -39,16 +39,22 @@ function createMainWindow(config, options) {
     windowOptions = {width: defaultWindowWidth, height: defaultWindowHeight};
   }
 
+  const {hideOnStartup, trayIconShown} = options;
+  const {maximized: windowIsMaximized} = windowOptions;
+
   if (process.platform === 'linux') {
     windowOptions.icon = options.linuxAppIcon;
   }
   Object.assign(windowOptions, {
     title: app.getName(),
     fullscreenable: true,
-    show: false,
+    show: hideOnStartup || false,
     minWidth: minimumWindowWidth,
     minHeight: minimumWindowHeight,
+    frame: false,
     fullscreen: false,
+    titleBarStyle: 'hiddenInset',
+    backgroundColor: '#fff', // prevents blurry text: https://electronjs.org/docs/faq#the-font-looks-blurry-what-is-this-and-what-can-i-do
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -63,18 +69,13 @@ function createMainWindow(config, options) {
   const indexURL = global.isDev ? 'http://localhost:8080/browser/index.html' : `file://${app.getAppPath()}/browser/index.html`;
   mainWindow.loadURL(indexURL);
 
-  // This section should be called after loadURL() #570
-  if (options.hideOnStartup) {
-    if (windowOptions.maximized) {
-      mainWindow.maximize();
-    }
-
-    // on MacOS, the window is already hidden until 'ready-to-show'
-    if (process.platform !== 'darwin') {
+  // handle hiding the app when launched by auto-start
+  if (hideOnStartup) {
+    if (trayIconShown && process.platform !== 'darwin') {
+      mainWindow.hide();
+    } else {
       mainWindow.minimize();
     }
-  } else if (windowOptions.maximized) {
-    mainWindow.maximize();
   }
 
   mainWindow.webContents.on('will-attach-webview', (event, webPreferences) => {
@@ -84,11 +85,36 @@ function createMainWindow(config, options) {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.webContents.setZoomLevel(0);
-    if (process.platform !== 'darwin') {
+
+    // handle showing the window when not launched by auto-start
+    // - when not configured to auto-start, immediately show contents and optionally maximize as needed
+    if (!hideOnStartup) {
       mainWindow.show();
-    } else if (options.hideOnStartup !== true) {
-      mainWindow.show();
+      if (windowIsMaximized) {
+        mainWindow.maximize();
+      }
     }
+  });
+
+  mainWindow.once('show', () => {
+    // handle showing the app when hidden to the tray icon by auto-start
+    // - optionally maximize the window as needed
+    if (hideOnStartup && windowIsMaximized) {
+      mainWindow.maximize();
+    }
+  });
+
+  mainWindow.once('restore', () => {
+    // handle restoring the window when minimized to the app icon by auto-start
+    // - optionally maximize the window as needed
+    if (hideOnStartup && windowIsMaximized) {
+      mainWindow.maximize();
+    }
+  });
+
+  mainWindow.webContents.on('will-attach-webview', (event, webPreferences) => {
+    webPreferences.nodeIntegration = false;
+    webPreferences.contextIsolation = true;
   });
 
   // App should save bounds when a window is closed.
@@ -135,10 +161,6 @@ function createMainWindow(config, options) {
       default:
       }
     }
-  });
-
-  mainWindow.on('sheet-end', () => {
-    mainWindow.webContents.send('focus-on-webview');
   });
 
   // Register keyboard shortcuts
