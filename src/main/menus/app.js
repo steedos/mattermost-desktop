@@ -118,7 +118,8 @@ function createTemplate(mainWindow, config, isDev) {
         mainWindow.webContents.send('paste-and-match');
       },
     }, {
-      role: '全选',
+      label: '全选',
+      role: 'selectall',
       accelerator: 'CmdOrCtrl+A',
     }],
   });

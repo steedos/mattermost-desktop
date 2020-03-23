@@ -114,7 +114,7 @@ function createMainWindow(config, options) {
 
   mainWindow.webContents.on('will-attach-webview', (event, webPreferences) => {
     webPreferences.nodeIntegration = false;
-    webPreferences.contextIsolation = true;
+    webPreferences.contextIsolation = false;
   });
 
   // App should save bounds when a window is closed.
