@@ -26,6 +26,8 @@ const U2F_EXTENSION_URL = 'chrome-extension://kmendfapggjehodndflmmgagdbamhnfd/u
 
 const appIconURL = `file:///${remote.app.getAppPath()}/assets/appicon_48.png`;
 
+const BWindow = require('electron').remote.BrowserWindow;
+
 export default class MattermostView extends React.Component {
   constructor(props) {
     super(props);
@@ -68,10 +70,25 @@ export default class MattermostView extends React.Component {
     };
   }
 
+  openBrowserWindow(url, options) {
+    let optionsObj = {};
+    if (!options){
+      optionsObj = {width: 1200, height: 900, show: true, autoHideMenuBar: true};
+    }else{
+      optionsObj = options;
+    }
+    let win = new BWindow(optionsObj);
+    win.on('closed', function() {
+      win = null;
+    });
+    
+    win.loadURL(url);
+    win.show();
+  }
+
   componentDidMount() {
     const self = this;
     const webview = this.webviewRef.current;
-
     webview.addEventListener('did-fail-load', (e) => {
       console.log(self.props.name, 'webview did-fail-load', e);
       if (e.errorCode === -3) { // An operation was aborted (due to user action).
@@ -121,9 +138,9 @@ export default class MattermostView extends React.Component {
         } else if (Utils.isTeamUrl(this.props.src, e.url, true) || Utils.isPluginUrl(this.props.src, e.url)) {
           // New window should disable nodeIntegration.
           window.open(e.url, remote.app.getName(), 'nodeIntegration=no, contextIsolation=yes, show=yes');
-        } else {
-          e.preventDefault();
-          shell.openExternal(e.url);
+        }else {
+          // 使用BrowserWindow打开，不使用默认浏览器打开
+          self.openBrowserWindow(e.url);
         }
       } else {
         const parsedURL = Utils.parseURL(e.url);

@@ -489,7 +489,7 @@ function handleAppWebContentsCreated(dc, contents) {
   });
 
   contents.on('new-window', (event, url) => {
-    event.preventDefault();
+    // event.preventDefault();
 
     const parsedURL = Utils.parseURL(url);
     const server = Utils.getServer(parsedURL, config.teams);
