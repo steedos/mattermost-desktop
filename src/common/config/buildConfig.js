@@ -22,7 +22,7 @@ const buildConfig = {
     //   url: 'https://messenger.steedos.cn'
     // }
   ],
-  helpLink: 'https://www.steedos.com/cn/messenger/',
+  helpLink: 'https://www.steedos.com/',
   enableServerManagement: true,
   enableAutoUpdater: false,
 };

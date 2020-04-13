@@ -124,9 +124,9 @@ function initialize(appState, mainWindow, notifyOnly = false) {
         cancellationToken = new CancellationToken();
         downloadAndInstall(cancellationToken);
       }).on('click-download', () => {
-        shell.openExternal('https://www.steedos.com/cn/messenger/downloads');
+        shell.openExternal('https://www.steedos.com/help/download/');
       }).on('click-release-notes', () => {
-        shell.openExternal(`https://www.steedos.com/cn/messenger/downloads`);
+        shell.openExternal(`https://www.steedos.com/help/download/`);
       }).on('click-cancel', () => {
         cancellationToken.cancel();
         updaterModal.close();
