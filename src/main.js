@@ -498,10 +498,11 @@ function handleAppWebContentsCreated(dc, contents) {
       log.info(`Untrusted popup window blocked: ${url}`);
       return;
     }
-    if (Utils.isTeamUrl(server.url, parsedURL, true) === true) {
-      log.info(`${url} is a known team, preventing to open a new window`);
-      return;
-    }
+    // if (Utils.isTeamUrl(server.url, parsedURL, true) === true) {
+    //   log.info(`${url} is a known team, preventing to open a new window`);
+    //   console.info("print page!---------");
+    //   return;
+    // }
     if (popupWindow && !popupWindow.closed && popupWindow.getURL() === url) {
       log.info(`Popup window already open at provided url: ${url}`);
       return;

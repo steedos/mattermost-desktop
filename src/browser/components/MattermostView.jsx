@@ -132,25 +132,30 @@ export default class MattermostView extends React.Component {
       if (Utils.isInternalURL(destURL, currentURL, this.state.basename)) {
         if (destURL.path.match(/^\/api\/v[3-4]\/public\/files\//)) {
           ipcRenderer.send('download-url', e.url);
-        } else if (destURL.path.match(/^\/help\//)) {
-          // continue to open special case internal urls in default browser
-          shell.openExternal(e.url);
-        } else if (Utils.isTeamUrl(this.props.src, e.url, true) || Utils.isPluginUrl(this.props.src, e.url)) {
-          // New window should disable nodeIntegration.
-          window.open(e.url, remote.app.getName(), 'nodeIntegration=no, contextIsolation=yes, show=yes');
-        }else {
-          // 使用BrowserWindow打开，不使用默认浏览器打开
+        } 
+        // else if (destURL.path.match(/^\/help\//)) {
+        //   // continue to open special case internal urls in default browser
+        //   shell.openExternal(e.url);
+        // } else if (Utils.isTeamUrl(this.props.src, e.url, true) || Utils.isPluginUrl(this.props.src, e.url)) {
+        //   // New window should disable nodeIntegration.
+        //   window.open(e.url, remote.app.getName(), 'nodeIntegration=no, contextIsolation=yes, show=yes');
+        // }else {
+        //   // 使用BrowserWindow打开，不使用默认浏览器打开
+        //   self.openBrowserWindow(e.url);
+        // }
+        else{
           self.openBrowserWindow(e.url);
         }
       } else {
-        const parsedURL = Utils.parseURL(e.url);
-        const serverURL = Utils.getServer(parsedURL, this.props.teams);
-        if (serverURL !== null && Utils.isTeamUrl(serverURL.url, parsedURL)) {
-          this.props.handleInterTeamLink(parsedURL);
-        } else {
-          // if the link is external, use default os' application.
-          ipcRenderer.send('confirm-protocol', destURL.protocol, e.url);
-        }
+        // const parsedURL = Utils.parseURL(e.url);
+        // const serverURL = Utils.getServer(parsedURL, this.props.teams);
+        // if (serverURL !== null && Utils.isTeamUrl(serverURL.url, parsedURL)) {
+        //   this.props.handleInterTeamLink(parsedURL);
+        // } else {
+        //   // if the link is external, use default os' application.
+        //   ipcRenderer.send('confirm-protocol', destURL.protocol, e.url);
+        // }
+        self.openBrowserWindow(e.url);
       }
     });
 
